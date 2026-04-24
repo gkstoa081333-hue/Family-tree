@@ -271,7 +271,8 @@ body{font-family:var(--font);background:var(--bg);color:var(--text);height:100dv
         <div id="hdr-title">-</div>
         <div id="hdr-sub">-</div>
       </div>
-      <button class="hdr-btn" onclick="exportSVG()" title="SVG로 저장">⬇ 저장</button>
+      <button class="hdr-btn" onclick="exportJPG()" title="JPG로 저장">🖼 JPG</button>
+      <button class="hdr-btn" onclick="exportSVG()" title="SVG로 저장">⬇ SVG</button>
       <button class="hdr-btn danger" onclick="deleteCase()" style="color:var(--red);margin-left:4px" title="사례 삭제">삭제</button>
     </div>
     <div id="tabs">
@@ -1120,20 +1121,22 @@ function renderEdges() {
         CL.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#334155','stroke-width':'2','stroke-linecap':'round'}));
       }
     }
-    const dropY = py + 60;
-    const cxs = chs.map(c=>c.x);
-    edgesLayer.appendChild(svgEl('line', {x1:px,y1:py+R+2,x2:px,y2:dropY,stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
-    if(chs.length>1) edgesLayer.appendChild(svgEl('line', {x1:Math.min(...cxs),y1:dropY,x2:Math.max(...cxs),y2:dropY,stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
+    // 부부선 중간점(px, py)에서 자녀 수평선까지 수직 연결
+    const childTopY = Math.min(...chs.map(c => c.y));
+    const horizY = Math.max(py + 50, childTopY - R - 16);
+    const cxs = chs.map(c => c.x);
+    edgesLayer.appendChild(svgEl('line', {x1:px, y1:py, x2:px, y2:horizY, stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
+    if(chs.length>1) edgesLayer.appendChild(svgEl('line', {x1:Math.min(...cxs), y1:horizY, x2:Math.max(...cxs), y2:horizY, stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
     chs.forEach(c => {
       const mark = c.mark || '';
       if(mark === 'child-foster') {
-        const vline = svgEl('line', {x1:c.x,y1:dropY,x2:c.x,y2:c.y-R-2,stroke:'#F59E0B','stroke-width':'2','stroke-linecap':'round'});
+        const vline = svgEl('line', {x1:c.x,y1:horizY,x2:c.x,y2:c.y-R-2,stroke:'#F59E0B','stroke-width':'2','stroke-linecap':'round'});
         vline.setAttribute('stroke-dasharray','5,4'); edgesLayer.appendChild(vline);
       } else if(mark === 'child-adopted') {
-        const midY = (dropY + c.y-R-2)/2;
-        edgesLayer.appendChild(svgEl('path', {d:`M${c.x},${dropY} L${c.x-8},${midY} L${c.x},${c.y-R-2}`,fill:'none',stroke:'#2563EB','stroke-width':'2','stroke-linejoin':'round','stroke-linecap':'round'}));
+        const midY = (horizY + c.y-R-2)/2;
+        edgesLayer.appendChild(svgEl('path', {d:`M${c.x},${horizY} L${c.x-8},${midY} L${c.x},${c.y-R-2}`,fill:'none',stroke:'#2563EB','stroke-width':'2','stroke-linejoin':'round','stroke-linecap':'round'}));
       } else {
-        edgesLayer.appendChild(svgEl('line', {x1:c.x,y1:dropY,x2:c.x,y2:c.y-R-2,stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
+        edgesLayer.appendChild(svgEl('line', {x1:c.x,y1:horizY,x2:c.x,y2:c.y-R-2,stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
       }
     });
   });
@@ -1288,12 +1291,70 @@ function commitCohabGroup() {
   cancelCohabGroup(); render(); saveGeno();
 }
 
+/* ── JPG 내보내기 ── */
+function exportJPG() {
+  const c = cases[currentId];
+  // 현재 뷰포트 transform 제거 후 전체 콘텐츠 기준으로 bbox 계산
+  [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform',''));
+
+  // 콘텐츠 범위 계산
+  const allX = nodes.map(n => n.x);
+  const allY = nodes.map(n => n.y);
+  if(!allX.length) {
+    [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform', `translate(${vpX},${vpY}) scale(${vpScale})`));
+    alert('가계도에 구성원이 없습니다.'); return;
+  }
+  const pad = 60;
+  const minX = Math.min(...allX) - pad - R;
+  const minY = Math.min(...allY) - pad - R;
+  const maxX = Math.max(...allX) + pad + R + 60;
+  const maxY = Math.max(...allY) + pad + R + 40;
+  const w = maxX - minX;
+  const h = maxY - minY;
+
+  // SVG를 해당 범위로 직렬화
+  const origVB = canvas.getAttribute('viewBox');
+  canvas.setAttribute('viewBox', `${minX} ${minY} ${w} ${h}`);
+  canvas.setAttribute('width', w);
+  canvas.setAttribute('height', h);
+
+  const svgStr = new XMLSerializer().serializeToString(canvas);
+
+  // viewBox 원복
+  if(origVB) canvas.setAttribute('viewBox', origVB);
+  else canvas.removeAttribute('viewBox');
+  canvas.removeAttribute('width');
+  canvas.removeAttribute('height');
+  [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform', `translate(${vpX},${vpY}) scale(${vpScale})`));
+
+  // Canvas에 렌더링
+  const img = new Image();
+  const svgBlob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
+  const url = URL.createObjectURL(svgBlob);
+  img.onload = () => {
+    const cvs = document.createElement('canvas');
+    const scale = 2; // 고해상도
+    cvs.width = w * scale;
+    cvs.height = h * scale;
+    const ctx = cvs.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, cvs.width, cvs.height);
+    ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
+    URL.revokeObjectURL(url);
+    const a = document.createElement('a');
+    a.download = `가계도_${c?.name||'unknown'}_${new Date().toISOString().slice(0,10)}.jpg`;
+    a.href = cvs.toDataURL('image/jpeg', 0.95);
+    a.click();
+  };
+  img.src = url;
+}
+
 /* ── SVG 내보내기 ── */
 function exportSVG() {
   const c = cases[currentId];
-  [nodesLayer, edgesLayer].forEach(l => l.setAttribute('transform',''));
+  [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform',''));
   const s = new XMLSerializer().serializeToString(canvas);
-  [nodesLayer, edgesLayer].forEach(l => l.setAttribute('transform', `translate(${vpX},${vpY}) scale(${vpScale})`));
+  [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform', `translate(${vpX},${vpY}) scale(${vpScale})`));
   const b = new Blob([s], {type:'image/svg+xml'});
   const a = document.createElement('a');
   a.href = URL.createObjectURL(b);
