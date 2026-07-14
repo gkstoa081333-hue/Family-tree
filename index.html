@@ -675,7 +675,7 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
       로컬 테스트는 `npx serve` 같은 로컬서버로, 배포는 Netlify로.
    ═══════════════════════════════════════════════════════════════ */
 const firebaseConfig = {
-  apiKey:            "AIzaSyAYGXGzru6atoC_hLfuB11h_NUOOKRjSAc",
+  apiKey:            "AIzaSyAYGXGzru6atoC_hlfuB11h_NUOOKRjSAc",
   authDomain:        "family-tree-d57c9.firebaseapp.com",
   databaseURL:       "https://family-tree-d57c9-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId:         "family-tree-d57c9",
@@ -700,6 +700,16 @@ const S = {
   tab:'cases'
 };
 const PIN_KEY = 'geno_pin_ok';
+const PIN_GRACE = 10*60*1000;   // 자동로그인 유예: 마지막 사용 후 10분 이내면 PIN 생략
+function pinStamp(){ try{ localStorage.setItem(PIN_KEY, JSON.stringify({u:S.uid, t:Date.now()})); }catch(e){} }
+function pinClear(){ try{ localStorage.removeItem(PIN_KEY); }catch(e){} }
+function pinValid(){
+  try{
+    const o = JSON.parse(localStorage.getItem(PIN_KEY)||'null');
+    return !!o && o.u === S.uid && (Date.now() - o.t) < PIN_GRACE;
+  }catch(e){ return false; }
+}
+function appUnlocked(){ return $('app').classList.contains('on') || $('viewCanvas').classList.contains('on'); }
 let authBusy = false;          // 가입 처리 중 onAuthStateChanged 중복 진입 방지
 let casesRef = null, membersRef = null;   // 리스너 중복 방지용 참조 (수정 #5)
 
@@ -888,7 +898,7 @@ async function doReset(){
 }
 
 function doLogout(){
-  sessionStorage.removeItem(PIN_KEY);
+  pinClear();
   auth.signOut().then(()=>location.reload());
 }
 
@@ -932,7 +942,7 @@ async function routeUser(user){
   if(S.me.rejected){ showPending('rejected'); return; }
   if(!S.me.approved){ showPending('wait'); return; }
   if(!S.me.pinHash){ startPin('set'); return; }
-  if(sessionStorage.getItem(PIN_KEY) === user.uid){ enterApp(); return; }
+  if(pinValid()){ pinStamp(); enterApp(); return; }
   startPin('verify');
 }
 
@@ -981,7 +991,7 @@ async function pinSubmit(){
   const pin = S.pinBuf;
   if(S.pinMode==='verify'){
     const h = await pinHash(pin);
-    if(h === S.me.pinHash){ sessionStorage.setItem(PIN_KEY, S.uid); enterApp(); }
+    if(h === S.me.pinHash){ pinStamp(); enterApp(); }
     else pinFail('PIN이 맞지 않습니다.');
     return;
   }
@@ -1002,11 +1012,11 @@ async function pinSubmit(){
   try{ await db.ref('users/'+S.uid+'/pinHash').set(h); }
   catch(e){ pinFail('PIN 저장에 실패했습니다.'); return; }
   S.me.pinHash = h;
-  sessionStorage.setItem(PIN_KEY, S.uid);
+  pinStamp();
   toast('PIN이 설정되었습니다.');
   enterApp();
 }
-function openPinChange(){ sessionStorage.removeItem(PIN_KEY); startPin('change'); }
+function openPinChange(){ pinClear(); startPin('change'); }
 
 /* ═══════════════════════════════════════════════════════════════
    앱 진입 · 케이스 목록  (구조: cases/{orgId}/{caseId} = 수정 #1)
@@ -1824,16 +1834,16 @@ function copyCode(){
 
 /* ── 전역 이벤트: 리사이즈 1회 등록 (수정 #11) · 복귀 재잠금 ── */
 window.addEventListener('resize', ()=>{ resizeStage(); updateNewBtn(); });
-let bgAt = null;
 document.addEventListener('visibilitychange', ()=>{
-  if(document.hidden) bgAt = Date.now();
-  else if(bgAt && Date.now()-bgAt > 5*60*1000 && S.me?.pinHash){
-    sessionStorage.removeItem(PIN_KEY);
+  if(document.hidden){ if(appUnlocked()) pinStamp(); return; }   // 나갈 때 마지막 사용시각 기록
+  if(S.me?.pinHash && appUnlocked() && !pinValid()){             // 유예시간 지나서 돌아오면 재잠금
     closeSheet();
     if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.caseId=null; }
     startPin('verify');
   }
 });
+window.addEventListener('pagehide', ()=>{ if(appUnlocked()) pinStamp(); });   // 탭/앱 종료 시에도 기록
+setInterval(()=>{ if(appUnlocked() && !document.hidden) pinStamp(); }, 60*1000);   // 사용 중 1분마다 갱신
 </script>
 </body>
 </html>
