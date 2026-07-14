@@ -2,1374 +2,1838 @@
 <html lang="ko">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<title>가계도 | 공주시정신건강복지센터</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#4C7A6D">
+<title>가계도 · 제네그램</title>
+<link rel="stylesheet" as="style" crossorigin href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
 <style>
-:root {
-  --blue:#2563EB; --blue-lt:#EFF6FF; --blue-dk:#1D4ED8;
-  --green:#059669; --red:#EF4444; --amber:#F59E0B;
-  --bg:#F1F5F9; --surface:#fff; --border:#E2E8F0; --border2:#CBD5E1;
-  --text:#0F172A; --text2:#475569; --text3:#94A3B8;
-  --r:10px; --font:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;
-  --sidebar:260px;
+/* ═══════════════════════════════════════════════
+   디자인 토큰 — 세이지 그린 (팔레트 2번)
+   ═══════════════════════════════════════════════ */
+:root{
+  --sage-deep:#4C7A6D;  --sage-mid:#6FA292;  --sage-light:#A9CFC3;
+  --sage-bg:#F1F6F3;    --ink:#22332E;       --ink-soft:#5B6E67;
+  --white:#fff;         --line:#DCE7E2;      --muted:#93a29c;
+  --st-addict:#C15B47;  --st-mental:#8A6FA8; --st-phys:#C99A3A;
+  --st-care:#4C7A6D;    --st-disab:#7A8B85;
+  --danger:#C15B47;
+  --sat:env(safe-area-inset-top,0px);
+  --sab:env(safe-area-inset-bottom,0px);
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
-body{font-family:var(--font);background:var(--bg);color:var(--text);height:100dvh;overflow:hidden;display:flex}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;margin:0;overscroll-behavior:none;}
+body{
+  font-family:'Pretendard',-apple-system,BlinkMacSystemFont,sans-serif;
+  background:var(--sage-bg); color:var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;cursor:pointer;border:none;background:none;color:inherit;}
+input,select,textarea{font-family:inherit;font-size:16px;}
+:focus-visible{outline:2px solid var(--sage-deep);outline-offset:2px;}
+.hide{display:none !important;}
 
-/* ── 사이드바 (웹) / 풀스크린 목록 (모바일) ── */
-#sidebar {
-  width:var(--sidebar);flex-shrink:0;background:var(--surface);
-  border-right:1px solid var(--border);display:flex;flex-direction:column;
-  height:100dvh;overflow:hidden;
+/* ── 공통 폼 요소 ── */
+.fld{margin-bottom:15px;}
+.fld > label{display:block;font-size:12px;font-weight:700;color:var(--ink-soft);margin-bottom:6px;}
+.inp{
+  width:100%;height:48px;background:var(--white);border:1px solid var(--line);
+  border-radius:12px;padding:0 14px;font-size:15px;font-weight:500;color:var(--ink);
 }
-#sidebar-hdr {
-  background:var(--blue);color:#fff;padding:16px;flex-shrink:0;
+.inp::placeholder{color:var(--muted);font-weight:400;}
+.inp:focus{outline:none;border-color:var(--sage-mid);box-shadow:0 0 0 3px rgba(111,162,146,.15);}
+textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-height:1.5;}
+.btn{
+  width:100%;height:52px;background:var(--sage-deep);color:#fff;border-radius:14px;
+  font-size:15.5px;font-weight:700;display:flex;align-items:center;justify-content:center;gap:8px;
+  transition:transform .12s, opacity .12s;
 }
-#sidebar-hdr h1{font-size:15px;font-weight:700}
-#sidebar-hdr p{font-size:11px;opacity:.7;margin-top:2px}
-#case-list{flex:1;overflow-y:auto;padding:8px}
-.case-card{
-  display:flex;align-items:center;gap:10px;padding:10px 12px;
-  border-radius:8px;cursor:pointer;transition:background .15s;margin-bottom:2px;
-  border:1px solid transparent;
+.btn:active{transform:scale(.985);}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.btn.ghost{background:var(--white);color:var(--ink);border:1px solid var(--line);}
+.btn.sm{height:40px;font-size:13.5px;border-radius:11px;width:auto;padding:0 16px;}
+.seg{display:flex;background:var(--white);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px;}
+.seg button{
+  flex:1;padding:10px 0;border-radius:9px;font-size:13.5px;font-weight:600;color:var(--ink-soft);
+  display:flex;align-items:center;justify-content:center;gap:6px;
 }
-.case-card:hover{background:var(--bg)}
-.case-card.active{background:var(--blue-lt);border-color:#BFDBFE}
-.case-av{
-  width:36px;height:36px;border-radius:50%;background:var(--blue);
-  color:#fff;font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0
-}
-.case-name{font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.case-sub{font-size:11px;color:var(--text3)}
-#sidebar-add{padding:12px;border-top:1px solid var(--border);flex-shrink:0}
-.btn-add{
-  width:100%;padding:10px;border-radius:8px;border:none;
-  background:var(--blue);color:#fff;font-size:14px;font-weight:600;
-  cursor:pointer;font-family:var(--font);display:flex;align-items:center;justify-content:center;gap:6px;
-}
-.btn-add:hover{background:var(--blue-dk)}
-.empty-tip{text-align:center;color:var(--text3);padding:32px 16px;font-size:13px}
-.empty-tip .ei{font-size:36px;margin-bottom:8px}
+.seg button.on{background:var(--sage-deep);color:#fff;}
+.msg{font-size:13px;padding:11px 13px;border-radius:11px;margin-bottom:14px;line-height:1.5;}
+.msg.err{background:#FBEDEA;color:var(--st-addict);border:1px solid #EBC8C0;}
+.msg.ok{background:#E9F1EE;color:var(--sage-deep);border:1px solid var(--sage-light);}
 
-/* ── 메인 영역 ── */
-#main{flex:1;display:flex;flex-direction:column;min-width:0;height:100dvh;overflow:hidden}
+/* ── 인증 / 대기 / PIN ── */
+.center-screen{
+  min-height:100dvh;display:flex;align-items:center;justify-content:center;
+  padding:24px 20px calc(24px + var(--sab));
+  background:radial-gradient(900px 500px at 20% 0%, #E4EFEA 0%, transparent 60%), var(--sage-bg);
+}
+.card{
+  width:100%;max-width:400px;background:var(--white);border:1px solid var(--line);
+  border-radius:24px;padding:30px 24px;box-shadow:0 20px 50px -24px rgba(34,51,46,.28);
+}
+.brand{display:flex;flex-direction:column;align-items:center;margin-bottom:24px;text-align:center;}
+.brand svg{margin-bottom:12px;}
+.brand h1{margin:0;font-size:24px;font-weight:800;letter-spacing:-.02em;}
+.brand p{margin:6px 0 0;font-size:13px;color:var(--ink-soft);line-height:1.5;}
+.tabs{display:flex;gap:4px;background:var(--sage-bg);border-radius:12px;padding:4px;margin-bottom:22px;}
+.tabs button{flex:1;padding:10px 0;border-radius:9px;font-size:14px;font-weight:700;color:var(--ink-soft);}
+.tabs button.on{background:var(--white);color:var(--sage-deep);box-shadow:0 1px 3px rgba(0,0,0,.06);}
+.foot-note{margin-top:16px;text-align:center;font-size:12px;color:var(--muted);line-height:1.7;}
+.foot-note a{color:var(--sage-deep);font-weight:600;cursor:pointer;text-decoration:none;}
 
-/* ── 헤더 ── */
-#main-hdr{
-  background:var(--surface);border-bottom:1px solid var(--border);
-  padding:10px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;
+.pin-dots{display:flex;gap:12px;justify-content:center;margin:22px 0 26px;}
+.pin-dots i{width:13px;height:13px;border-radius:50%;background:var(--line);transition:background .15s, transform .15s;}
+.pin-dots i.on{background:var(--sage-deep);transform:scale(1.15);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;max-width:280px;margin:0 auto;}
+.pin-pad button{
+  height:60px;border-radius:16px;background:var(--white);border:1px solid var(--line);
+  font-size:21px;font-weight:600;display:flex;align-items:center;justify-content:center;
 }
-#mobile-back{display:none;background:none;border:none;font-size:22px;cursor:pointer;padding:2px 6px;color:var(--text)}
-#hdr-title{font-size:16px;font-weight:700;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-#hdr-sub{font-size:12px;color:var(--text3)}
-.hdr-btn{
-  background:var(--bg);border:1px solid var(--border2);color:var(--text2);
-  border-radius:7px;padding:6px 12px;font-size:13px;font-weight:600;cursor:pointer;
-  font-family:var(--font);white-space:nowrap;
-}
-.hdr-btn:hover{background:var(--border)}
+.pin-pad button:active{background:var(--sage-bg);}
+.pin-pad button.blank{background:transparent;border:none;}
+.shake{animation:shake .32s;}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-7px)}75%{transform:translateX(7px)}}
 
-/* ── 탭 ── */
-#tabs{display:flex;border-bottom:1px solid var(--border);background:var(--surface);flex-shrink:0}
-.tab{
-  padding:10px 20px;font-size:13px;font-weight:600;color:var(--text3);
-  border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;
-  font-family:var(--font);
+/* ── 앱 셸 ── */
+#app{display:none;height:100dvh;flex-direction:column;}
+#app.on{display:flex;}
+.side{display:none;}
+.main{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.tabbar{
+  flex:0 0 auto;background:var(--white);border-top:1px solid var(--line);
+  display:flex;align-items:center;justify-content:space-around;
+  padding:8px 0 calc(8px + var(--sab));
 }
-.tab.active{color:var(--blue);border-bottom-color:var(--blue)}
-.tab:hover:not(.active){color:var(--text2)}
-
-/* ── 탭 패널 ── */
-.panel{flex:1;display:none;overflow:hidden}
-.panel.active{display:flex;flex-direction:column}
-
-/* ── 가계도 패널 ── */
-#geno-panel{position:relative}
-#canvas-wrap{flex:1;position:relative;background:#F7F9FC;overflow:hidden;touch-action:none}
-#geno-canvas{width:100%;height:100%;display:block}
-
-/* 관계 모드 토스트 */
-#rel-toast{
-  position:absolute;top:10px;left:50%;transform:translateX(-50%);
-  background:var(--blue);color:#fff;border-radius:20px;
-  padding:8px 16px;font-size:13px;font-weight:500;display:none;z-index:30;
-  box-shadow:0 4px 16px rgba(0,0,0,.15);text-align:center;white-space:nowrap;pointer-events:none;
-}
-#rel-toast.show{display:block}
-#rel-toast-btn{
-  display:none;margin-top:6px;background:rgba(255,255,255,.25);
-  border:1px solid rgba(255,255,255,.5);color:#fff;border-radius:12px;
-  padding:5px 14px;font-size:12px;font-family:var(--font);cursor:pointer;pointer-events:all;
-}
-#cancel-rel{
-  display:none;position:absolute;top:10px;right:12px;
-  background:#fff;border:1px solid var(--border2);border-radius:20px;
-  padding:6px 14px;font-size:13px;font-weight:600;color:var(--text2);
-  box-shadow:0 1px 6px rgba(0,0,0,.1);z-index:31;cursor:pointer;
-}
-
-/* ── 툴바 ── */
-#toolbar{
-  background:var(--surface);border-top:1px solid var(--border);
-  padding:10px 14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;
-  flex-shrink:0;
-}
-.tb-group{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
-.tb-sep{width:1px;height:28px;background:var(--border);margin:0 2px}
-.tb-label{font-size:10px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:.06em;white-space:nowrap}
-.tb-btn{
+.tabbar button{
   display:flex;flex-direction:column;align-items:center;gap:3px;
-  padding:7px 10px;border-radius:8px;border:1px solid var(--border);
-  background:var(--surface);font-size:11px;font-weight:600;color:var(--text2);
-  cursor:pointer;font-family:var(--font);white-space:nowrap;min-width:52px;
-  transition:background .12s,border-color .12s;
+  font-size:10.5px;font-weight:600;color:var(--muted);padding:2px 14px;
 }
-.tb-btn:hover{background:var(--bg);border-color:var(--border2)}
-.tb-btn.active{background:var(--blue-lt);border-color:#93C5FD;color:var(--blue)}
-.tb-btn.danger{color:var(--red);border-color:#FECACA;background:#FEF2F2}
-.tb-btn.danger:hover{background:#FEE2E2}
-.tb-btn svg{display:block}
+.tabbar button.on{color:var(--sage-deep);}
+.tabbar button.on svg *{stroke:var(--sage-deep);}
+.scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;}
 
-/* ── 오버레이 편집 패널 (가계도 클릭시) ── */
-#edit-panel{
-  position:absolute;right:10px;bottom:10px;
-  background:var(--surface);border:1px solid var(--border);border-radius:12px;
-  box-shadow:0 4px 20px rgba(0,0,0,.12);width:220px;padding:14px;
-  display:none;z-index:20;
+.hdr{padding:calc(16px + var(--sat)) 20px 12px;}
+.hdr .hi{font-size:13px;color:var(--ink-soft);font-weight:500;}
+.hdr .row{display:flex;align-items:center;justify-content:space-between;margin-top:2px;}
+.hdr h2{margin:0;font-size:25px;font-weight:800;letter-spacing:-.02em;}
+.hdr .org{font-size:11.5px;color:var(--sage-deep);font-weight:700;margin-top:3px;}
+.avatar{
+  width:38px;height:38px;border-radius:50%;background:var(--sage-light);color:var(--sage-deep);
+  display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex:0 0 38px;
 }
-#edit-panel.show{display:block}
-.ep-title{font-size:13px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
-.ep-close{background:var(--bg);border:none;border-radius:50%;width:24px;height:24px;font-size:13px;cursor:pointer;color:var(--text3)}
-.ef{display:flex;flex-direction:column;gap:3px;margin-bottom:9px}
-.ef label{font-size:11px;font-weight:600;color:var(--text2)}
-.ef input,.ef select{
-  padding:7px 10px;border:1px solid var(--border);border-radius:7px;
-  font-size:13px;font-family:var(--font);color:var(--text);background:var(--surface);
+.searchbar{
+  margin:4px 20px 0;background:var(--white);border:1px solid var(--line);border-radius:14px;
+  height:46px;display:flex;align-items:center;gap:9px;padding:0 14px;
 }
-.ef input:focus,.ef select:focus{outline:none;border-color:var(--blue)}
-.ef-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.ep-del{
-  width:100%;margin-top:8px;padding:8px;border-radius:7px;border:none;
-  background:#FEF2F2;color:var(--red);font-size:13px;font-weight:600;cursor:pointer;
-  font-family:var(--font);
-}
-.ep-del:hover{background:#FEE2E2}
+.searchbar input{flex:1;border:none;background:none;font-size:14.5px;color:var(--ink);}
+.searchbar input:focus{outline:none;}
+.stats{display:flex;gap:10px;padding:14px 20px 4px;}
+.stat{flex:1;background:var(--sage-deep);color:#fff;border-radius:16px;padding:13px 14px;}
+.stat.alt{background:var(--white);color:var(--ink);border:1px solid var(--line);}
+.stat b{display:block;font-size:22px;font-weight:800;letter-spacing:-.01em;}
+.stat span{font-size:11.5px;font-weight:500;opacity:.85;}
+.stat.alt span{color:var(--ink-soft);opacity:1;}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;padding:18px 20px 8px;}
+.sec-head b{font-size:15px;font-weight:700;}
+.sec-head span{font-size:12.5px;color:var(--muted);}
 
-/* ── 정보/메모 패널 ── */
-#info-panel,#memo-panel{overflow-y:auto;padding:20px}
-.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:14px}
-.card-title{font-size:14px;font-weight:700;margin-bottom:14px;color:var(--text)}
-.fgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.fgrid .full{grid-column:1/-1}
-.fg{display:flex;flex-direction:column;gap:4px}
-.fg label{font-size:12px;font-weight:600;color:var(--text2)}
-.fg input,.fg select,.fg textarea{
-  padding:9px 11px;border:1px solid var(--border);border-radius:8px;
-  font-size:14px;font-family:var(--font);color:var(--text);background:var(--surface);
+.case-grid{padding:0 16px 90px;display:grid;grid-template-columns:1fr;gap:10px;}
+.case{
+  display:flex;gap:13px;align-items:flex-start;background:var(--white);
+  border:1px solid var(--line);border-radius:18px;padding:13px;cursor:pointer;
+  transition:border-color .14s, transform .1s;
 }
-.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--blue)}
-.fg textarea{resize:vertical;min-height:72px}
-.save-btn{
-  display:block;padding:10px;border-radius:8px;border:none;
-  background:var(--blue);color:#fff;font-size:14px;font-weight:600;
-  cursor:pointer;font-family:var(--font);width:100%;margin-top:4px;
+.case:active{transform:scale(.99);}
+.case:hover{border-color:var(--sage-light);}
+.thumb{
+  flex:0 0 62px;width:62px;height:58px;background:var(--sage-bg);border-radius:12px;
+  display:flex;align-items:center;justify-content:center;overflow:hidden;
 }
-/* 메모 */
-.memo-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:14px;margin-bottom:14px}
-.memo-box textarea{width:100%;padding:9px 11px;border:1px solid var(--border);border-radius:8px;font-size:14px;font-family:var(--font);resize:none;height:72px;margin-bottom:8px}
-.memo-box textarea:focus{outline:none;border-color:var(--blue)}
-.memo-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:8px}
-.memo-text{font-size:14px;line-height:1.65;margin-bottom:6px}
-.memo-meta{display:flex;justify-content:space-between;align-items:center}
-.memo-date{font-size:11px;color:var(--text3)}
-.memo-del{background:none;border:none;color:var(--text3);font-size:12px;padding:2px 6px;cursor:pointer}
+.case-body{flex:1;min-width:0;}
+.case-body .nm{
+  font-size:15px;font-weight:700;display:flex;align-items:center;gap:6px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+}
+.case-body .mt{font-size:12px;color:var(--ink-soft);margin-top:3px;}
+.chips{display:flex;gap:5px;margin-top:8px;flex-wrap:wrap;}
+.chip{
+  font-size:10.5px;font-weight:600;padding:3px 8px;border-radius:20px;
+  background:var(--sage-bg);color:var(--sage-deep);border:1px solid var(--sage-light);
+}
+.chip.priv{background:#F3F5F4;color:var(--ink-soft);border-color:var(--line);}
+.chip.shared{background:#E9F1EE;color:var(--sage-deep);border-color:var(--sage-light);}
+.chip.addict{background:#FBEDEA;color:var(--st-addict);border-color:#EBC8C0;}
+.chip.mental{background:#F1ECF7;color:var(--st-mental);border-color:#D9CDE8;}
+.case-time{font-size:11px;color:var(--muted);white-space:nowrap;flex:0 0 auto;}
+.empty{text-align:center;padding:56px 30px;color:var(--ink-soft);}
+.empty svg{margin-bottom:14px;opacity:.5;}
+.empty b{display:block;font-size:15px;font-weight:700;color:var(--ink);margin-bottom:6px;}
+.empty p{margin:0;font-size:13px;line-height:1.6;}
 
-/* ── 빈 상태 (메인) ── */
-#empty-main{
-  flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  color:var(--text3);gap:10px;padding:40px;text-align:center;
+.fab{
+  position:fixed;right:18px;bottom:calc(78px + var(--sab));width:56px;height:56px;border-radius:18px;
+  background:var(--sage-deep);color:#fff;display:flex;align-items:center;justify-content:center;
+  box-shadow:0 10px 24px -6px rgba(76,122,109,.65);z-index:40;
 }
-#empty-main .ei{font-size:56px;opacity:.4}
+.fab:active{transform:scale(.94);}
 
-/* ── 모달 ── */
-.modal-ov{
-  position:fixed;inset:0;background:rgba(0,0,0,.45);
-  display:none;align-items:center;justify-content:center;z-index:200;padding:20px;
+/* ── 캔버스 ── */
+#viewCanvas{display:none;flex-direction:column;height:100dvh;background:var(--sage-bg);}
+#viewCanvas.on{display:flex;}
+.cv-hdr{flex:0 0 auto;padding:calc(10px + var(--sat)) 14px 10px;display:flex;align-items:center;gap:10px;}
+.iconbtn{
+  width:40px;height:40px;border-radius:12px;background:var(--white);border:1px solid var(--line);
+  display:flex;align-items:center;justify-content:center;flex:0 0 40px;
 }
-.modal-ov.show{display:flex}
-.modal{
-  background:var(--surface);border-radius:14px;
-  padding:24px;width:100%;max-width:380px;box-shadow:0 8px 32px rgba(0,0,0,.2);
+.iconbtn:active{background:var(--sage-bg);}
+.cv-hdr .ttl{flex:1;min-width:0;}
+.cv-hdr .ttl b{
+  font-size:16px;font-weight:700;display:block;line-height:1.25;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
-.modal h3{font-size:17px;font-weight:700;margin-bottom:18px}
-.mf{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
-.mf label{font-size:12px;font-weight:600;color:var(--text2)}
-.mf input{padding:10px 12px;border:1px solid var(--border);border-radius:8px;font-size:15px;font-family:var(--font);width:100%}
-.mf input:focus{outline:none;border-color:var(--blue)}
-.modal-footer{display:flex;gap:8px;margin-top:18px}
-.modal-footer button{
-  flex:1;padding:11px;border-radius:8px;font-size:14px;font-weight:600;
-  cursor:pointer;border:1px solid var(--border2);font-family:var(--font);
+.cv-hdr .ttl small{font-size:11.5px;color:var(--ink-soft);}
+#stageWrap{
+  flex:1;margin:0 12px;background:var(--white);border:1px solid var(--line);
+  border-radius:20px;position:relative;overflow:hidden;min-height:0;touch-action:none;
 }
-.modal-footer .btn-ok{background:var(--blue);color:#fff;border-color:var(--blue)}
-.modal-footer .btn-ok:hover{background:var(--blue-dk)}
+#stage{width:100%;height:100%;}
+.zoom{
+  position:absolute;top:12px;right:12px;background:rgba(255,255,255,.94);border:1px solid var(--line);
+  border-radius:20px;display:flex;flex-direction:column;overflow:hidden;z-index:5;
+}
+.zoom button{width:36px;height:36px;font-size:18px;color:var(--ink);display:flex;align-items:center;justify-content:center;}
+.zoom button+button{border-top:1px solid var(--line);}
+.legend{
+  position:absolute;left:12px;bottom:12px;background:rgba(255,255,255,.94);border:1px solid var(--line);
+  border-radius:12px;padding:8px 10px;font-size:10px;color:var(--ink-soft);line-height:1.75;z-index:5;
+}
+.legend i{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px;vertical-align:middle;}
+.hint{
+  position:absolute;top:12px;left:12px;right:60px;background:var(--sage-deep);color:#fff;
+  border-radius:12px;padding:9px 13px;font-size:12.5px;font-weight:600;z-index:6;line-height:1.4;
+}
+.toolbar{
+  flex:0 0 auto;margin:12px;padding:0 4px;background:var(--white);border:1px solid var(--line);
+  border-radius:20px;display:flex;align-items:center;justify-content:space-around;height:68px;
+  margin-bottom:calc(12px + var(--sab));
+}
+.tool{
+  display:flex;flex-direction:column;align-items:center;gap:4px;
+  font-size:10px;font-weight:600;color:var(--ink-soft);flex:1;
+}
+.tool .sym{width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:11px;}
+.tool.on{color:var(--sage-deep);}
+.tool.on .sym{background:var(--sage-bg);}
+.tool.on .sym svg *{stroke:var(--sage-deep);}
 
-/* ── 모바일 반응형 ── */
-@media(max-width:640px){
-  #sidebar{
-    position:fixed;inset:0;width:100%;z-index:100;
-    transform:translateX(0);transition:transform .26s ease;
+/* ── 시트 ── */
+.dim{
+  position:fixed;inset:0;background:rgba(34,51,46,.4);z-index:60;
+  opacity:0;pointer-events:none;transition:opacity .22s;
+}
+.dim.on{opacity:1;pointer-events:auto;}
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:61;background:var(--sage-bg);
+  border-radius:26px 26px 0 0;padding:8px 20px calc(24px + var(--sab));
+  max-height:90dvh;overflow-y:auto;transform:translateY(100%);transition:transform .28s cubic-bezier(.32,.72,0,1);
+}
+.sheet.on{transform:translateY(0);}
+.grab{width:40px;height:5px;background:#c3d2cc;border-radius:3px;margin:6px auto 16px;}
+.sheet h3{margin:0 0 2px;font-size:19px;font-weight:800;letter-spacing:-.01em;}
+.sheet .sub{font-size:12.5px;color:var(--ink-soft);margin-bottom:18px;line-height:1.5;}
+.row2{display:flex;gap:11px;}
+.row2 > .fld{flex:1;}
+.tagrid{display:flex;flex-wrap:wrap;gap:8px;}
+.stag{
+  font-size:12.5px;font-weight:600;padding:8px 13px;border-radius:12px;border:1.5px solid var(--line);
+  background:var(--white);color:var(--ink-soft);display:flex;align-items:center;gap:7px;
+}
+.stag i{width:9px;height:9px;border-radius:50%;}
+.stag.on{border-color:currentColor;}
+.sheet-acts{display:flex;gap:10px;margin-top:6px;}
+.sheet-acts .btn{flex:1;}
+.rel-list{display:flex;flex-direction:column;gap:8px;}
+.rel-item{
+  display:flex;align-items:center;gap:13px;background:var(--white);border:1px solid var(--line);
+  border-radius:14px;padding:13px 14px;text-align:left;
+}
+.rel-item:active{background:var(--sage-bg);}
+.rel-item .rl-sym{flex:0 0 44px;height:22px;display:flex;align-items:center;}
+.rel-item b{display:block;font-size:14px;font-weight:700;}
+.rel-item small{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:2px;}
+
+.usr{
+  display:flex;align-items:center;gap:12px;background:var(--white);border:1px solid var(--line);
+  border-radius:14px;padding:12px 13px;margin-bottom:8px;
+}
+.usr .ub{flex:1;min-width:0;}
+.usr .ub b{display:block;font-size:14px;font-weight:700;}
+.usr .ub small{display:block;font-size:11.5px;color:var(--ink-soft);margin-top:2px;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.badge{font-size:10px;font-weight:700;padding:3px 7px;border-radius:6px;
+  background:var(--sage-bg);color:var(--sage-deep);border:1px solid var(--sage-light);}
+.badge.wait{background:#FDF3E6;color:#B07A22;border-color:#EBD5B0;}
+.code-box{
+  background:var(--white);border:1px dashed var(--sage-mid);border-radius:14px;padding:15px;
+  text-align:center;margin-bottom:18px;
+}
+.code-box small{display:block;font-size:11.5px;color:var(--ink-soft);margin-bottom:6px;}
+.code-box b{font-size:24px;font-weight:800;letter-spacing:.16em;color:var(--sage-deep);font-family:ui-monospace,monospace;}
+
+#toast{
+  position:fixed;left:50%;bottom:calc(96px + var(--sab));transform:translate(-50%,16px);
+  background:var(--ink);color:#fff;padding:12px 18px;border-radius:12px;font-size:13.5px;font-weight:600;
+  z-index:90;opacity:0;pointer-events:none;transition:.25s;max-width:88vw;text-align:center;
+}
+#toast.on{opacity:1;transform:translate(-50%,0);}
+#boot{
+  position:fixed;inset:0;background:var(--sage-bg);z-index:200;
+  display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px;
+}
+.spin{
+  width:32px;height:32px;border:3px solid var(--sage-light);border-top-color:var(--sage-deep);
+  border-radius:50%;animation:spin .8s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ── 데스크톱 (1024px~) ── */
+@media (min-width:1024px){
+  #app.on{flex-direction:row;}
+  .tabbar{display:none;}
+  .side{
+    display:flex;flex-direction:column;flex:0 0 232px;background:var(--white);
+    border-right:1px solid var(--line);padding:24px 16px;gap:4px;
   }
-  #sidebar.hidden{transform:translateX(-100%)}
-  #main{width:100%}
-  #mobile-back{display:block}
-  #toolbar{overflow-x:auto;flex-wrap:nowrap;padding:8px 12px}
-  #edit-panel{right:8px;bottom:calc(env(safe-area-inset-bottom,0px) + 8px);width:200px}
-  .fgrid{grid-template-columns:1fr}
-  .fgrid .full{grid-column:1}
-  #info-panel,#memo-panel{padding:14px}
-  .tab{padding:10px 14px;font-size:12px}
-  .hdr-btn{padding:5px 10px;font-size:12px}
+  .side .logo{display:flex;align-items:center;gap:10px;padding:0 8px 22px;}
+  .side .logo b{font-size:17px;font-weight:800;letter-spacing:-.01em;}
+  .side nav{display:flex;flex-direction:column;gap:3px;flex:1;}
+  .side nav button{
+    display:flex;align-items:center;gap:11px;padding:11px 12px;border-radius:12px;
+    font-size:14px;font-weight:600;color:var(--ink-soft);text-align:left;
+  }
+  .side nav button:hover{background:var(--sage-bg);}
+  .side nav button.on{background:var(--sage-deep);color:#fff;}
+  .side nav button.on svg *{stroke:#fff;}
+  .side .me{display:flex;align-items:center;gap:10px;padding:11px 8px;border-top:1px solid var(--line);margin-top:8px;}
+  .side .me .mb{flex:1;min-width:0;}
+  .side .me .mb b{display:block;font-size:13.5px;font-weight:700;}
+  .side .me .mb small{display:block;font-size:11px;color:var(--ink-soft);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .hdr{padding:28px 32px 14px;}
+  .hdr .row{align-items:flex-end;}
+  .hdr h2{font-size:28px;}
+  .hdr .avatar{display:none;}
+  .searchbar{margin:14px 32px 0;max-width:460px;}
+  .stats{padding:16px 32px 4px;max-width:460px;}
+  .sec-head{padding:22px 32px 10px;}
+  .case-grid{padding:0 32px 40px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;}
+  .case{padding:15px;}
+  .fab{
+    position:static;width:auto;height:44px;border-radius:13px;padding:0 18px;gap:8px;
+    font-size:14px;font-weight:700;box-shadow:none;
+  }
+  .fab .fab-txt{display:inline;}
+  #viewCanvas.on{flex-direction:row;height:100dvh;}
+  .cv-hdr{
+    position:absolute;top:0;left:0;right:0;z-index:10;padding:18px 24px;
+    background:linear-gradient(var(--sage-bg) 60%, transparent);
+  }
+  .cv-main{flex:1;display:flex;flex-direction:column;position:relative;min-width:0;}
+  #stageWrap{margin:74px 24px 24px 110px;}
+  .toolbar{
+    position:absolute;left:24px;top:50%;transform:translateY(-50%);z-index:8;
+    flex-direction:column;width:70px;height:auto;margin:0;padding:10px 0;gap:6px;
+    justify-content:flex-start;
+  }
+  .toolbar .tool{flex:0 0 auto;padding:6px 0;}
+  .dim{background:rgba(34,51,46,.22);}
+  .sheet{
+    left:auto;right:0;top:0;bottom:0;width:400px;max-height:none;border-radius:0;
+    padding:26px 26px 30px;transform:translateX(100%);
+    border-left:1px solid var(--line);box-shadow:-10px 0 40px -20px rgba(34,51,46,.3);
+  }
+  .sheet.on{transform:translateX(0);}
+  .grab{display:none;}
+  #toast{bottom:32px;}
 }
+.fab-txt{display:none;}
+.cv-main{flex:1;display:flex;flex-direction:column;position:relative;min-width:0;min-height:0;}
 </style>
 </head>
 <body>
 
-<!-- 사이드바: 사례 목록 -->
-<div id="sidebar">
-  <div id="sidebar-hdr">
-    <h1>🏥 가계도 관리</h1>
-    <p>공주시정신건강복지센터</p>
-  </div>
-  <div id="case-list">
-    <div class="empty-tip">
-      <div class="ei">📋</div>
-      <p style="font-weight:600;margin-bottom:4px">사례가 없습니다</p>
-      <p>아래 버튼으로 추가하세요</p>
+<div id="boot"><div class="spin"></div><small style="color:var(--ink-soft);font-size:13px;">불러오는 중</small></div>
+
+<!-- ══════════ 1. 로그인 / 가입 / 기관등록 / 가입마무리 ══════════ -->
+<div id="viewAuth" class="center-screen hide">
+  <div class="card">
+    <div class="brand">
+      <svg width="46" height="42" viewBox="0 0 46 42">
+        <rect x="4" y="3" width="15" height="15" fill="none" stroke="#4C7A6D" stroke-width="2.4"/>
+        <circle cx="35" cy="10.5" r="7.5" fill="none" stroke="#4C7A6D" stroke-width="2.4"/>
+        <line x1="19" y1="10.5" x2="27.5" y2="10.5" stroke="#4C7A6D" stroke-width="2.4"/>
+        <path d="M23 10.5 V26 H12" fill="none" stroke="#6FA292" stroke-width="2.4"/>
+        <path d="M23 26 H34" fill="none" stroke="#6FA292" stroke-width="2.4"/>
+        <circle cx="12" cy="33.5" r="7" fill="none" stroke="#6FA292" stroke-width="2.4"/>
+        <rect x="27" y="26.5" width="14" height="14" fill="none" stroke="#22332E" stroke-width="2.4"/>
+        <rect x="24.5" y="24" width="19" height="19" fill="none" stroke="#22332E" stroke-width="1"/>
+      </svg>
+      <h1>가계도</h1>
+      <p>사회복지 현장을 위한 제네그램 도구</p>
     </div>
-  </div>
-  <div id="sidebar-add">
-    <button class="btn-add" onclick="openModal()">＋ 새 사례 추가</button>
+
+    <div class="tabs" id="authTabs">
+      <button id="tabLogin" class="on" onclick="switchAuth('login')">로그인</button>
+      <button id="tabSignup" onclick="switchAuth('signup')">가입하기</button>
+    </div>
+
+    <div id="authMsg"></div>
+
+    <div id="formLogin">
+      <div class="fld"><label>이메일</label>
+        <input id="liEmail" class="inp" type="email" placeholder="name@center.or.kr" autocomplete="username"></div>
+      <div class="fld"><label>비밀번호</label>
+        <input id="liPw" class="inp" type="password" placeholder="비밀번호" autocomplete="current-password"></div>
+      <button class="btn" id="btnLogin" onclick="doLogin()">로그인</button>
+      <div class="foot-note"><a onclick="doReset()">비밀번호를 잊으셨나요?</a></div>
+    </div>
+
+    <div id="formSignup" class="hide">
+      <div class="fld"><label>이름</label>
+        <input id="suName" class="inp" placeholder="홍길동"></div>
+      <div class="fld"><label>기관 가입코드</label>
+        <input id="suCode" class="inp" placeholder="기관 관리자에게 받은 코드" style="text-transform:uppercase;letter-spacing:.08em;">
+        <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5;">
+          코드가 없다면 <a onclick="switchAuth('org')" style="color:var(--sage-deep);font-weight:600;cursor:pointer;">기관을 새로 등록</a>하세요.
+        </div>
+      </div>
+      <div class="fld"><label>이메일</label>
+        <input id="suEmail" class="inp" type="email" placeholder="name@center.or.kr" autocomplete="username"></div>
+      <div class="fld"><label>비밀번호 (6자 이상)</label>
+        <input id="suPw" class="inp" type="password" placeholder="비밀번호" autocomplete="new-password"></div>
+      <button class="btn" id="btnSignup" onclick="doSignup()">가입 신청하기</button>
+      <div class="foot-note">가입 후 기관 관리자의 승인을 받으면 이용할 수 있습니다.</div>
+    </div>
+
+    <div id="formOrg" class="hide">
+      <div class="fld"><label>기관명</label>
+        <input id="orgName" class="inp" placeholder="○○시정신건강복지센터"></div>
+      <div class="fld"><label>관리자 이름</label>
+        <input id="orgAdmin" class="inp" placeholder="홍길동"></div>
+      <div class="fld"><label>이메일</label>
+        <input id="orgEmail" class="inp" type="email" placeholder="name@center.or.kr"></div>
+      <div class="fld"><label>비밀번호 (6자 이상)</label>
+        <input id="orgPw" class="inp" type="password" placeholder="비밀번호"></div>
+      <button class="btn" id="btnOrg" onclick="doCreateOrg()">기관 등록하고 시작하기</button>
+      <div class="foot-note">
+        등록하면 관리자 권한을 받고, 소속 직원에게 나눠줄 <b>가입코드</b>가 발급됩니다.<br>
+        <a onclick="switchAuth('signup')">코드로 가입하기</a>
+      </div>
+    </div>
+
+    <!-- 가입이 중간에 끊긴 계정의 마무리 -->
+    <div id="formResume" class="hide">
+      <div class="msg ok">계정은 있지만 가입이 완료되지 않았습니다.<br>아래 정보를 입력해 가입을 마무리하세요.</div>
+      <div class="fld"><label>이름</label>
+        <input id="rsName" class="inp" placeholder="홍길동"></div>
+      <div class="fld"><label>기관 가입코드</label>
+        <input id="rsCode" class="inp" placeholder="기관 관리자에게 받은 코드" style="text-transform:uppercase;letter-spacing:.08em;"></div>
+      <button class="btn" id="btnResume" onclick="doResume()">가입 마무리하기</button>
+      <div class="foot-note"><a onclick="doLogout()">다른 계정으로 로그인</a></div>
+    </div>
   </div>
 </div>
 
-<!-- 메인 -->
-<div id="main">
-  <!-- 빈 상태 -->
-  <div id="empty-main">
-    <div class="ei">🧬</div>
-    <p style="font-size:15px;font-weight:600;color:var(--text2)">사례를 선택하세요</p>
-    <p style="font-size:13px">왼쪽 목록에서 사례를 선택하거나 추가하세요</p>
+<!-- ══════════ 2. 승인 대기 / 거절 ══════════ -->
+<div id="viewPending" class="center-screen hide">
+  <div class="card" style="text-align:center;">
+    <svg width="52" height="52" viewBox="0 0 52 52" style="margin:0 auto 16px;display:block;">
+      <circle cx="26" cy="26" r="23" fill="none" stroke="#A9CFC3" stroke-width="3"/>
+      <path d="M26 13v14l9 5" fill="none" stroke="#4C7A6D" stroke-width="3" stroke-linecap="round"/>
+    </svg>
+    <h1 id="pendTitle" style="margin:0 0 8px;font-size:20px;font-weight:800;">승인을 기다리는 중입니다</h1>
+    <p id="pendText" style="margin:0 0 22px;font-size:13.5px;color:var(--ink-soft);line-height:1.65;"></p>
+    <button class="btn" id="pendReapply" onclick="reapply()" style="margin-bottom:9px;" hidden>다시 신청하기</button>
+    <button class="btn ghost" onclick="location.reload()" style="margin-bottom:9px;">상태 새로고침</button>
+    <button class="btn ghost" onclick="doLogout()">로그아웃</button>
   </div>
+</div>
 
-  <!-- 사례 뷰 (선택 시) -->
-  <div id="case-view" style="display:none;flex:1;display:none;flex-direction:column;overflow:hidden">
-    <div id="main-hdr">
-      <button id="mobile-back" onclick="mobileBack()">←</button>
-      <div style="flex:1;min-width:0">
-        <div id="hdr-title">-</div>
-        <div id="hdr-sub">-</div>
-      </div>
-      <button class="hdr-btn" onclick="exportJPG()" title="JPG로 저장">🖼 JPG</button>
-      <button class="hdr-btn" onclick="exportSVG()" title="SVG로 저장">⬇ SVG</button>
-      <button class="hdr-btn danger" onclick="deleteCase()" style="color:var(--red);margin-left:4px" title="사례 삭제">삭제</button>
+<!-- ══════════ 3. PIN ══════════ -->
+<div id="viewPin" class="center-screen hide">
+  <div class="card" style="text-align:center;" id="pinCard">
+    <h1 id="pinTitle" style="margin:0 0 6px;font-size:20px;font-weight:800;">PIN 입력</h1>
+    <p id="pinSub" style="margin:0;font-size:13px;color:var(--ink-soft);line-height:1.55;">
+      내담자 정보를 보호합니다. 6자리 PIN을 입력하세요.
+    </p>
+    <div class="pin-dots" id="pinDots"><i></i><i></i><i></i><i></i><i></i><i></i></div>
+    <div class="pin-pad" id="pinPad"></div>
+    <div style="margin-top:18px;">
+      <a onclick="doLogout()" style="font-size:12.5px;color:var(--muted);cursor:pointer;">다른 계정으로 로그인</a>
     </div>
-    <div id="tabs">
-      <button class="tab active" onclick="switchTab('geno')">🧬 가계도</button>
-      <button class="tab" onclick="switchTab('info')">📄 사례정보</button>
-      <button class="tab" onclick="switchTab('memo')">📝 메모</button>
+  </div>
+</div>
+
+<!-- ══════════ 4. 메인 앱 ══════════ -->
+<div id="app">
+  <aside class="side">
+    <div class="logo">
+      <svg width="26" height="24" viewBox="0 0 46 42">
+        <rect x="4" y="3" width="15" height="15" fill="none" stroke="#4C7A6D" stroke-width="3"/>
+        <circle cx="35" cy="10.5" r="7.5" fill="none" stroke="#4C7A6D" stroke-width="3"/>
+        <line x1="19" y1="10.5" x2="27.5" y2="10.5" stroke="#4C7A6D" stroke-width="3"/>
+        <path d="M23 10.5 V26 H27" fill="none" stroke="#6FA292" stroke-width="3"/>
+        <rect x="27" y="26.5" width="14" height="14" fill="none" stroke="#22332E" stroke-width="3"/>
+      </svg>
+      <b>가계도</b>
     </div>
+    <nav>
+      <button id="sideCases" class="on" onclick="goTab('cases')">
+        <svg width="19" height="19" viewBox="0 0 22 22"><rect x="3" y="4" width="7" height="6" rx="1.5" fill="none" stroke="#5B6E67" stroke-width="1.7"/><circle cx="15.5" cy="7" r="3.5" fill="none" stroke="#5B6E67" stroke-width="1.7"/><path d="M6.5 10v4h9" stroke="#5B6E67" stroke-width="1.7" fill="none"/><rect x="12" y="14" width="7" height="6" rx="1.5" fill="none" stroke="#5B6E67" stroke-width="1.7"/></svg>
+        케이스
+      </button>
+      <button id="sideAdmin" class="hide" onclick="goTab('admin')">
+        <svg width="19" height="19" viewBox="0 0 22 22"><path d="M11 2.5l7 3v5c0 4-3 7.5-7 9-4-1.5-7-5-7-9v-5z" fill="none" stroke="#5B6E67" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 11l2 2 4-4" fill="none" stroke="#5B6E67" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        기관 관리
+      </button>
+      <button id="sideMe" onclick="goTab('me')">
+        <svg width="19" height="19" viewBox="0 0 22 22"><circle cx="11" cy="7" r="3.4" fill="none" stroke="#5B6E67" stroke-width="1.7"/><path d="M4.5 18a6.5 6.5 0 0 1 13 0" fill="none" stroke="#5B6E67" stroke-width="1.7"/></svg>
+        내 정보
+      </button>
+    </nav>
+    <div class="me">
+      <div class="avatar" id="sideAv">?</div>
+      <div class="mb"><b id="sideNm">—</b><small id="sideOrg">—</small></div>
+    </div>
+  </aside>
 
-    <!-- 가계도 패널 -->
-    <div id="geno-panel" class="panel active">
-      <div id="canvas-wrap">
-        <svg id="geno-canvas" xmlns="http://www.w3.org/2000/svg">
-          <g id="groups-layer"></g>
-          <g id="couple-layer"></g>
-          <g id="edges-layer"></g>
-          <g id="nodes-layer"></g>
-        </svg>
-        <div id="rel-toast">
-          <div id="rel-toast-text">구성원을 클릭하세요</div>
-          <button id="rel-toast-btn" onclick="commitFamily()">✓ 연결 완료</button>
-        </div>
-        <button id="cancel-rel" onclick="cancelRel()">✕ 취소</button>
-      </div>
+  <div class="main">
+    <div class="scroll" id="mainScroll">
 
-      <!-- 노드 편집 오버레이 -->
-      <div id="edit-panel">
-        <div class="ep-title">
-          구성원 편집
-          <button class="ep-close" onclick="closeEdit()">✕</button>
-        </div>
-        <div class="ef-row">
-          <div class="ef"><label>이름</label><input id="ep-name" type="text" placeholder="이름" oninput="updateNode()"></div>
-          <div class="ef"><label>나이</label><input id="ep-age" type="text" placeholder="나이" oninput="updateNode()"></div>
-        </div>
-        <div class="ef" style="margin-top:8px"><label>메모 (직업·진단명 등)</label><input id="ep-note" type="text" oninput="updateNode()"></div>
-        <div class="ef" style="margin-top:8px"><label>문제/상태 표시</label>
-          <select id="ep-mark" onchange="updateNode()">
-            <option value="">없음</option>
-            <optgroup label="── 사망">
-              <option value="deceased">사망 (X표시)</option>
-            </optgroup>
-            <optgroup label="── 클라이언트">
-              <option value="ip">주요 클라이언트 IP (밑줄)</option>
-            </optgroup>
-            <optgroup label="── 문제">
-              <option value="prob-drug">약물남용/정신·신체 문제 (좌상 반쪽)</option>
-              <option value="prob-severe">심한 정신·신체 문제 (가득 채움)</option>
-              <option value="prob-drug-male">약물남용 남성 (우하 반쪽)</option>
-              <option value="prob-suspect">약물남용 의심 (우상 반쪽)</option>
-              <option value="prob-recovery">약물남용 회복 (좌하 반쪽)</option>
-            </optgroup>
-            <optgroup label="── 자녀 유형">
-              <option value="child-foster">위탁 자녀</option>
-              <option value="child-adopted">입양 자녀</option>
-            </optgroup>
-          </select>
-        </div>
-        <label style="display:flex;align-items:center;gap:7px;margin-top:10px;font-size:13px;font-weight:600;color:var(--text2);cursor:pointer">
-          <input type="checkbox" id="ep-ct" onchange="updateNode()" style="width:16px;height:16px;accent-color:var(--blue)"> CT 본인 (이중선)
-        </label>
-        <button class="ep-del" onclick="deleteNode()">이 구성원 삭제</button>
-      </div>
-
-      <!-- 툴바 -->
-      <div id="toolbar">
-        <span class="tb-label">추가</span>
-        <div class="tb-group">
-          <button class="tb-btn" onclick="addNode('male')" title="남성 추가">
-            <svg width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="16" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-            남성
-          </button>
-          <button class="tb-btn" onclick="addNode('female')" title="여성 추가">
-            <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="8" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-            여성
-          </button>
-          <button class="tb-btn" onclick="addNode('unknown')" title="성별미상">
-            <svg width="18" height="18" viewBox="0 0 18 18"><polygon points="9,1 17,17 1,17" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-            미상
-          </button>
-        </div>
-        <div class="tb-sep"></div>
-        <span class="tb-label">직계</span>
-        <div class="tb-group" style="flex-wrap:wrap;gap:5px">
-          <div style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">
-            <button class="tb-btn" id="rb-family" onclick="startRel('family')" title="부모-자녀 연결">
-              <svg width="18" height="18" viewBox="0 0 18 18"><rect x="1" y="1" width="6" height="6" rx="1" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="14" cy="4" r="3" fill="none" stroke="currentColor" stroke-width="1.8"/><line x1="4" y1="7" x2="4" y2="11" stroke="currentColor" stroke-width="1.5"/><line x1="14" y1="7" x2="14" y2="11" stroke="currentColor" stroke-width="1.5"/><line x1="1" y1="11" x2="17" y2="11" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2,1.5"/><circle cx="4" cy="14.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="11" cy="14.5" r="2.5" fill="none" stroke="currentColor" stroke-width="1.4"/></svg>
-              가족연결
+      <div id="tabCases">
+        <div class="hdr">
+          <div class="hi" id="greet">안녕하세요</div>
+          <div class="row">
+            <div>
+              <h2>케이스</h2>
+              <div class="org" id="hdrOrg">—</div>
+            </div>
+            <div class="avatar" id="hdrAv">?</div>
+            <button class="fab" id="deskNew" onclick="newCase()" style="display:none;">
+              <svg width="18" height="18" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.4" stroke-linecap="round"/></svg>
+              <span class="fab-txt">새 케이스</span>
             </button>
-            <select id="family-couple-type" style="padding:5px 7px;border:1px solid var(--border);border-radius:7px;font-size:11px;font-family:var(--font);color:var(--text2);background:var(--surface);height:36px" title="부부 관계선">
-              <option value="marriage">결혼</option>
-              <option value="separated">벌거</option>
-              <option value="divorce">이혼</option>
-              <option value="remarry">재결합</option>
-              <option value="cohabit">동거</option>
-              <option value="none">선없음</option>
-            </select>
           </div>
         </div>
-        <div class="tb-sep"></div>
-        <span class="tb-label">그룹</span>
-        <div class="tb-group">
-          <button class="tb-btn" id="rb-cohabgroup" onclick="startCohabGroup()" title="동거 그룹 (점선 타원)">
-            <svg width="28" height="18" viewBox="0 0 28 18"><ellipse cx="14" cy="9" rx="13" ry="8" fill="none" stroke="#64748B" stroke-width="1.8" stroke-dasharray="4,3"/><rect x="5" y="5" width="6" height="6" rx="1" fill="none" stroke="#64748B" stroke-width="1.5"/><circle cx="20" cy="9" r="3.5" fill="none" stroke="#64748B" stroke-width="1.5"/></svg>
-            동거그룹
-          </button>
+        <div class="searchbar">
+          <svg width="16" height="16" viewBox="0 0 16 16"><circle cx="7" cy="7" r="5" fill="none" stroke="#93a29c" stroke-width="1.6"/><path d="M11 11l3.5 3.5" stroke="#93a29c" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <input id="q" placeholder="이름·사례번호 검색" oninput="renderCases()">
         </div>
-        <div class="tb-sep"></div>
-        <span class="tb-label">관계선</span>
-        <div class="tb-group">
-          <button class="tb-btn" id="rb-close" onclick="startRel('close')" title="친밀한 관계">
-            <svg width="26" height="10" viewBox="0 0 26 10"><line x1="0" y1="5" x2="26" y2="5" stroke="#059669" stroke-width="2"/><line x1="0" y1="9" x2="26" y2="9" stroke="#059669" stroke-width="2"/></svg>
-            친밀
-          </button>
-          <button class="tb-btn" id="rb-distant" onclick="startRel('distant')" title="소원한 관계">
-            <svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="#94A3B8" stroke-width="2" stroke-dasharray="3,3"/></svg>
-            소원
-          </button>
-          <button class="tb-btn" id="rb-enmesh" onclick="startRel('enmesh')" title="밀착된 관계">
-            <svg width="26" height="12" viewBox="0 0 26 12"><line x1="0" y1="3" x2="26" y2="3" stroke="#059669" stroke-width="2"/><line x1="0" y1="7" x2="26" y2="7" stroke="#059669" stroke-width="2"/><line x1="0" y1="11" x2="26" y2="11" stroke="#059669" stroke-width="2"/></svg>
-            밀착
-          </button>
-          <button class="tb-btn" id="rb-cut" onclick="startRel('cut')" title="단절된 관계">
-            <svg width="26" height="10" viewBox="0 0 26 10"><line x1="0" y1="5" x2="26" y2="5" stroke="#64748B" stroke-width="2"/><line x1="11" y1="0" x2="11" y2="10" stroke="#64748B" stroke-width="2"/><line x1="15" y1="0" x2="15" y2="10" stroke="#64748B" stroke-width="2"/></svg>
-            단절
-          </button>
-          <button class="tb-btn" id="rb-conflict" onclick="startRel('conflict')" title="갈등관계">
-            <svg width="26" height="12" viewBox="0 0 26 12"><polyline points="0,6 4,2 8,10 12,2 16,10 20,2 26,6" fill="none" stroke="#EF4444" stroke-width="2" stroke-linejoin="round"/></svg>
-            갈등
-          </button>
-          <button class="tb-btn" id="rb-fused-conflict" onclick="startRel('fused-conflict')" title="융합된 갈등관계">
-            <svg width="26" height="14" viewBox="0 0 26 14"><line x1="0" y1="4" x2="26" y2="4" stroke="#059669" stroke-width="2"/><line x1="0" y1="8" x2="26" y2="8" stroke="#059669" stroke-width="2"/><polyline points="0,12 4,8 8,14 12,8 16,14 20,8 26,12" fill="none" stroke="#EF4444" stroke-width="1.5" stroke-linejoin="round"/></svg>
-            융합갈등
-          </button>
-          <button class="tb-btn" id="rb-hostile" onclick="startRel('hostile')" title="친밀-적대적">
-            <svg width="26" height="12" viewBox="0 0 26 12"><line x1="0" y1="3" x2="26" y2="3" stroke="#059669" stroke-width="2"/><line x1="0" y1="7" x2="26" y2="7" stroke="#059669" stroke-width="2"/><polyline points="0,11 4,7 8,13 12,7 16,13 20,7 26,11" fill="none" stroke="#EF4444" stroke-width="1.5" stroke-linejoin="round"/></svg>
-            친밀적대
-          </button>
+        <div class="stats">
+          <div class="stat"><b id="stTotal">0</b><span>열람 가능한 케이스</span></div>
+          <div class="stat alt"><b id="stWeek">0</b><span>이번 주 수정</span></div>
         </div>
-        <div class="tb-sep"></div>
-        <span class="tb-label">결혼·이혼</span>
-        <div class="tb-group">
-          <button class="tb-btn" id="rb-marriage" onclick="startRel('marriage')" title="결혼">
-            <svg width="26" height="6" viewBox="0 0 26 6"><line x1="0" y1="3" x2="26" y2="3" stroke="currentColor" stroke-width="2.5"/></svg>
-            결혼
-          </button>
-          <button class="tb-btn" id="rb-separated" onclick="startRel('separated')" title="벌거">
-            <svg width="26" height="10" viewBox="0 0 26 10"><line x1="0" y1="5" x2="26" y2="5" stroke="#94A3B8" stroke-width="2.5"/><line x1="11" y1="0" x2="14" y2="10" stroke="#94A3B8" stroke-width="2"/></svg>
-            벌거
-          </button>
-          <button class="tb-btn" id="rb-divorce" onclick="startRel('divorce')" title="이혼">
-            <svg width="26" height="10" viewBox="0 0 26 10"><line x1="0" y1="5" x2="26" y2="5" stroke="#94A3B8" stroke-width="2.5"/><line x1="9" y1="0" x2="12" y2="10" stroke="#94A3B8" stroke-width="2"/><line x1="14" y1="0" x2="17" y2="10" stroke="#94A3B8" stroke-width="2"/></svg>
-            이혼
-          </button>
-          <button class="tb-btn" id="rb-remarry" onclick="startRel('remarry')" title="이혼 후 재결합">
-            <svg width="26" height="10" viewBox="0 0 26 10"><line x1="0" y1="5" x2="26" y2="5" stroke="#334155" stroke-width="2.5"/><line x1="7" y1="0" x2="10" y2="10" stroke="#94A3B8" stroke-width="1.8"/><line x1="11" y1="0" x2="14" y2="10" stroke="#94A3B8" stroke-width="1.8"/><line x1="19" y1="0" x2="22" y2="10" stroke="#334155" stroke-width="2"/></svg>
-            재결합
-          </button>
+        <div class="sec-head"><b>전체 케이스</b><span id="caseCount"></span></div>
+        <div class="case-grid" id="caseList"></div>
+      </div>
+
+      <div id="tabAdmin" class="hide">
+        <div class="hdr">
+          <div class="hi">기관 관리자</div>
+          <div class="row"><h2>기관 관리</h2></div>
         </div>
-        <div class="tb-sep"></div>
-        <div class="tb-group">
-          <button class="tb-btn" onclick="undoAction()" title="실행취소">
-            <svg width="18" height="18" viewBox="0 0 18 18"><path d="M3 9a6 6 0 1 1 1.5 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><polyline points="3,4 3,9 8,9" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
-            취소
-          </button>
-          <button class="tb-btn danger" onclick="clearGenogram()" title="초기화">
-            <svg width="18" height="18" viewBox="0 0 18 18"><polyline points="2,4 3,4 16,4" stroke="currentColor" stroke-width="2" fill="none"/><path d="M5,4V3a1,1 0 0,1 1-1h6a1,1 0 0,1 1,1v1M13,4v11a1,1 0 0,1-1,1H6a1,1 0 0,1-1-1V4" stroke="currentColor" stroke-width="2" fill="none" stroke-linejoin="round"/></svg>
-            초기화
-          </button>
+        <div style="padding:14px 20px 90px;">
+          <div class="code-box">
+            <small>직원에게 이 코드를 알려주세요</small>
+            <b id="adminCode">——————</b>
+            <div style="margin-top:11px;"><button class="btn sm ghost" onclick="copyCode()">코드 복사</button></div>
+          </div>
+          <div class="sec-head" style="padding:6px 0 10px;"><b>승인 대기</b><span id="waitCnt"></span></div>
+          <div id="waitList"></div>
+          <div class="sec-head" style="padding:18px 0 10px;"><b>소속 직원</b><span id="memCnt"></span></div>
+          <div id="memList"></div>
+          <div class="sec-head" style="padding:18px 0 10px;"><b>케이스 공개범위</b></div>
+          <p style="font-size:12.5px;color:var(--ink-soft);line-height:1.6;margin:0 0 12px;">
+            관리자는 기관의 모든 케이스를 열람하고, 공개범위를 바꿀 수 있습니다.
+          </p>
+          <div id="adminCases"></div>
         </div>
+      </div>
+
+      <div id="tabMe" class="hide">
+        <div class="hdr">
+          <div class="hi">계정</div>
+          <div class="row"><h2>내 정보</h2></div>
+        </div>
+        <div style="padding:14px 20px 90px;">
+          <div class="usr" style="margin-bottom:16px;">
+            <div class="avatar" id="meAv">?</div>
+            <div class="ub"><b id="meNm">—</b><small id="meEmail">—</small></div>
+            <span class="badge" id="meRole">직원</span>
+          </div>
+          <div class="fld"><label>소속 기관</label><div class="inp" style="display:flex;align-items:center;" id="meOrg">—</div></div>
+          <button class="btn ghost" onclick="openPinChange()" style="margin-bottom:10px;">PIN 변경하기</button>
+          <button class="btn ghost" onclick="doLogout()">로그아웃</button>
+          <p style="font-size:11.5px;color:var(--muted);text-align:center;margin-top:18px;line-height:1.7;">
+            내담자 정보는 기관 단위로 분리 저장됩니다.<br>기기 분실 시 즉시 관리자에게 알려주세요.
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="tabbar">
+      <button id="tabBtnCases" class="on" onclick="goTab('cases')">
+        <svg width="22" height="22" viewBox="0 0 22 22"><rect x="3" y="4" width="7" height="6" rx="1.5" fill="none" stroke="#9aaaa4" stroke-width="1.7"/><circle cx="15.5" cy="7" r="3.5" fill="none" stroke="#9aaaa4" stroke-width="1.7"/><path d="M6.5 10v4h9" stroke="#9aaaa4" stroke-width="1.7" fill="none"/><rect x="12" y="14" width="7" height="6" rx="1.5" fill="none" stroke="#9aaaa4" stroke-width="1.7"/></svg>
+        케이스
+      </button>
+      <button id="tabBtnAdmin" class="hide" onclick="goTab('admin')">
+        <svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 2.5l7 3v5c0 4-3 7.5-7 9-4-1.5-7-5-7-9v-5z" fill="none" stroke="#9aaaa4" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 11l2 2 4-4" fill="none" stroke="#9aaaa4" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        기관 관리
+      </button>
+      <button id="tabBtnMe" onclick="goTab('me')">
+        <svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="7" r="3.4" fill="none" stroke="#9aaaa4" stroke-width="1.7"/><path d="M4.5 18a6.5 6.5 0 0 1 13 0" fill="none" stroke="#9aaaa4" stroke-width="1.7"/></svg>
+        내 정보
+      </button>
+    </div>
+  </div>
+
+  <button class="fab" id="mobNew" onclick="newCase()">
+    <svg width="24" height="24" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="#fff" stroke-width="2.3" stroke-linecap="round"/></svg>
+  </button>
+</div>
+
+<!-- ══════════ 5. 캔버스 ══════════ -->
+<div id="viewCanvas">
+  <div class="cv-main">
+    <div class="cv-hdr">
+      <button class="iconbtn" onclick="closeCanvas()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path d="M11 3l-5 6 5 6" fill="none" stroke="#22332E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <div class="ttl"><b id="cvTitle">—</b><small id="cvSub">—</small></div>
+      <button class="iconbtn" onclick="openCaseSettings()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><circle cx="9" cy="9" r="2.4" fill="none" stroke="#22332E" stroke-width="1.8"/><path d="M9 1.5v2M9 14.5v2M2.2 5.2l1.7 1M14.1 11.8l1.7 1M2.2 12.8l1.7-1M14.1 6.2l1.7-1" stroke="#22332E" stroke-width="1.8" stroke-linecap="round"/></svg>
+      </button>
+      <button class="iconbtn" onclick="exportPNG()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path d="M9 2v9M5.5 7.5L9 11l3.5-3.5" stroke="#4C7A6D" stroke-width="1.9" fill="none" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 12v2.5h11V12" stroke="#4C7A6D" stroke-width="1.9" fill="none" stroke-linecap="round"/></svg>
+      </button>
+    </div>
+
+    <div id="stageWrap">
+      <div id="stage"></div>
+      <div class="hint hide" id="cvHint"></div>
+      <div class="zoom">
+        <button onclick="zoomBy(1.25)">+</button>
+        <button onclick="zoomBy(0.8)">−</button>
+        <button onclick="fitView()" style="font-size:11px;font-weight:700;">맞춤</button>
+      </div>
+      <div class="legend">
+        <div><i style="background:var(--st-addict)"></i>중독</div>
+        <div><i style="background:var(--st-mental)"></i>우울·정신</div>
+        <div><i style="background:var(--st-phys)"></i>신체질환</div>
       </div>
     </div>
 
-    <!-- 사례정보 패널 -->
-    <div id="info-panel" class="panel">
-      <div class="card">
-        <div class="card-title">👤 기본 정보</div>
-        <div class="fgrid">
-          <div class="fg"><label>CT 성명</label><input id="fi-name" type="text" oninput="saveInfo()"></div>
-          <div class="fg"><label>생년월일</label><input id="fi-birth" type="text" placeholder="YYYY-MM-DD" oninput="saveInfo()"></div>
-          <div class="fg"><label>성별</label>
-            <select id="fi-sex" onchange="saveInfo()"><option value="">선택</option><option>남</option><option>여</option></select>
-          </div>
-          <div class="fg"><label>연락처</label><input id="fi-tel" type="tel" oninput="saveInfo()"></div>
-          <div class="fg full"><label>주소</label><input id="fi-addr" type="text" oninput="saveInfo()"></div>
-          <div class="fg"><label>담당 사회복지사</label><input id="fi-sw" type="text" oninput="saveInfo()"></div>
-          <div class="fg"><label>사례 등록일</label><input id="fi-date" type="date" oninput="saveInfo()"></div>
-        </div>
-      </div>
-      <div class="card">
-        <div class="card-title">🏥 진단 및 서비스</div>
-        <div class="fgrid">
-          <div class="fg"><label>주요 진단명</label><input id="fi-diag" type="text" oninput="saveInfo()"></div>
-          <div class="fg"><label>서비스 유형</label>
-            <select id="fi-svc" onchange="saveInfo()">
-              <option value="">선택</option><option>집중사례관리</option><option>일반사례관리</option>
-              <option>위기개입</option><option>정보제공</option><option>종결</option>
-            </select>
-          </div>
-          <div class="fg full"><label>의뢰 사유</label><textarea id="fi-reason" oninput="saveInfo()"></textarea></div>
-          <div class="fg full"><label>현재 상황 요약</label><textarea id="fi-summary" oninput="saveInfo()"></textarea></div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 메모 패널 -->
-    <div id="memo-panel" class="panel">
-      <div class="memo-box">
-        <textarea id="memo-input" placeholder="상담 메모, 특이사항 등..."></textarea>
-        <button class="save-btn" onclick="addMemo()">메모 추가</button>
-      </div>
-      <div id="memo-list"></div>
+    <div class="toolbar">
+      <button class="tool on" id="tlMale" onclick="setTool('male')">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><rect x="4" y="4" width="14" height="14" fill="none" stroke="#5B6E67" stroke-width="2"/></svg></span>남성
+      </button>
+      <button class="tool" id="tlFemale" onclick="setTool('female')">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="7.5" fill="none" stroke="#5B6E67" stroke-width="2"/></svg></span>여성
+      </button>
+      <button class="tool" id="tlUnknown" onclick="setTool('unknown')">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 3l8 8-8 8-8-8z" fill="none" stroke="#5B6E67" stroke-width="2" stroke-linejoin="round"/></svg></span>미상
+      </button>
+      <button class="tool" id="tlLink" onclick="setTool('link')">
+        <span class="sym"><svg width="26" height="22" viewBox="0 0 26 22"><rect x="2" y="8" width="7" height="7" fill="none" stroke="#5B6E67" stroke-width="1.8"/><circle cx="20.5" cy="11.5" r="4" fill="none" stroke="#5B6E67" stroke-width="1.8"/><line x1="9" y1="11.5" x2="16.5" y2="11.5" stroke="#5B6E67" stroke-width="1.8"/></svg></span>관계선
+      </button>
+      <button class="tool" id="tlPan" onclick="setTool('pan')">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 3v16M3 11h16" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round"/><path d="M8 6l3-3 3 3M8 16l3 3 3-3M6 8l-3 3 3 3M16 8l3 3-3 3" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>이동
+      </button>
     </div>
   </div>
 </div>
 
-<!-- 새 사례 모달 -->
-<div class="modal-ov" id="modal-new">
-  <div class="modal">
-    <h3>새 사례 추가</h3>
-    <div class="mf"><label>CT 성명 *</label><input id="nc-name" type="text" placeholder="홍길동"></div>
-    <div class="mf"><label>담당 사회복지사</label><input id="nc-sw" type="text" placeholder="담당자 이름"></div>
-    <div class="mf"><label>사례 등록일</label><input id="nc-date" type="date"></div>
-    <div class="modal-footer">
-      <button onclick="closeModal()">취소</button>
-      <button class="btn-ok" onclick="createCase()">추가</button>
-    </div>
-  </div>
+<div class="dim" id="dim" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet">
+  <div class="grab"></div>
+  <div id="sheetBody"></div>
 </div>
+
+<div id="toast"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
+<script src="https://unpkg.com/konva@9.3.6/konva.min.js"></script>
 
 <script>
-/* ───────── 데이터 ───────── */
-let cases = {}, currentId = null;
+/* ═══════════════════════════════════════════════════════════════
+   ⚠️ Firebase 콘솔에서 발급받은 설정값으로 교체하세요.
+   콘솔 → 프로젝트 설정 → 내 앱 → 웹 앱 → SDK 설정
+   ※ PIN(WebCrypto)은 https 환경에서만 동작합니다.
+      로컬 테스트는 `npx serve` 같은 로컬서버로, 배포는 Netlify로.
+   ═══════════════════════════════════════════════════════════════ */
+const firebaseConfig = {
+  apiKey:            "AIzaSyAYGXGzru6atoC_hLfuB11h_NUOOKRjSAc",
+  authDomain:        "family-tree-d57c9.firebaseapp.com",
+  databaseURL:       "https://family-tree-d57c9-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:         "family-tree-d57c9",
+  storageBucket:     "family-tree-d57c9.firebasestorage.app",
+  messagingSenderId: "193716972298",
+  appId:             "1:193716972298:web:35d949ec311a6261b428f3"
+};
 
-function save() {
-  try { localStorage.setItem('geno_v4', JSON.stringify(cases)); } catch(e){}
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db   = firebase.database();
+
+/* ═══ 전역 상태 ═══ */
+const S = {
+  uid:null, me:null, org:null, joinCode:null,
+  allCases:{},                 // 기관 전체 (관리자 패널용)
+  cases:{},                    // 내가 열람 가능한 것
+  caseId:null, geno:{nodes:{},links:{}},
+  tool:'male', sel:null, linkFrom:null,
+  stage:null, layer:null,
+  pinBuf:'', pinMode:'verify',
+  tab:'cases'
+};
+const PIN_KEY = 'geno_pin_ok';
+let authBusy = false;          // 가입 처리 중 onAuthStateChanged 중복 진입 방지
+let casesRef = null, membersRef = null;   // 리스너 중복 방지용 참조 (수정 #5)
+
+const STATUS = {
+  addict:{ label:'중독',      color:'#C15B47' },
+  mental:{ label:'우울·정신',  color:'#8A6FA8' },
+  phys:  { label:'신체질환',   color:'#C99A3A' },
+  care:  { label:'치료 중',    color:'#4C7A6D' },
+  disab: { label:'장애',      color:'#7A8B85' }
+};
+const RELS = {
+  marriage:  { label:'결혼',  desc:'실선으로 연결',     kind:'couple' },
+  cohabit:   { label:'동거',  desc:'점선으로 연결',     kind:'couple' },
+  separated: { label:'별거',  desc:'사선 1개 표시',     kind:'couple' },
+  divorced:  { label:'이혼',  desc:'사선 2개 표시',     kind:'couple' },
+  child:     { label:'자녀',  desc:'부모 → 자녀로 연결', kind:'child'  },
+  adopted:   { label:'입양',  desc:'점선 자녀선',       kind:'child'  },
+  close:     { label:'친밀',  desc:'정서: 굵은 이중선',  kind:'emo'    },
+  conflict:  { label:'갈등',  desc:'정서: 지그재그선',   kind:'emo'    },
+  cutoff:    { label:'단절',  desc:'정서: 끊긴 선',     kind:'emo'    }
+};
+
+/* ═══ 유틸 ═══ */
+const $ = id => document.getElementById(id);
+const esc = s => String(s??'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m){ const t=$('toast'); t.textContent=m; t.classList.add('on'); clearTimeout(t._t); t._t=setTimeout(()=>t.classList.remove('on'),2200); }
+function show(id){
+  ['viewAuth','viewPending','viewPin'].forEach(v=>$(v).classList.add('hide'));
+  $('app').classList.remove('on'); $('viewCanvas').classList.remove('on');
+  if(id==='app') $('app').classList.add('on');
+  else if(id==='viewCanvas') $('viewCanvas').classList.add('on');
+  else $(id).classList.remove('hide');
 }
-function load() {
-  try { const d = localStorage.getItem('geno_v4'); if(d) cases = JSON.parse(d); } catch(e){}
+/* 수정 #8: uid를 솔트로 섞은 PIN 해시 */
+async function pinHash(pin){
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(S.uid + ':' + pin));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+function timeAgo(ts){
+  if(!ts) return '';
+  const d = Date.now()-ts, m=6e4, h=36e5, day=864e5;
+  if(d<m) return '방금';
+  if(d<h) return Math.floor(d/m)+'분 전';
+  if(d<day) return Math.floor(d/h)+'시간 전';
+  if(d<7*day) return Math.floor(d/day)+'일 전';
+  return new Date(ts).toLocaleDateString('ko-KR',{month:'numeric',day:'numeric'});
+}
+function authErr(e){
+  const m = {
+    'auth/invalid-email':'이메일 형식이 올바르지 않습니다.',
+    'auth/user-not-found':'등록되지 않은 이메일입니다.',
+    'auth/wrong-password':'비밀번호가 맞지 않습니다.',
+    'auth/invalid-credential':'이메일 또는 비밀번호가 맞지 않습니다.',
+    'auth/email-already-in-use':'이미 가입된 이메일입니다. 로그인해 주세요.',
+    'auth/weak-password':'비밀번호는 6자 이상이어야 합니다.',
+    'auth/too-many-requests':'시도가 많습니다. 잠시 후 다시 해주세요.',
+    'auth/network-request-failed':'네트워크에 연결할 수 없습니다.'
+  };
+  return m[e.code] || (e.message || '문제가 발생했습니다.');
+}
+function setMsg(html, type='err'){
+  $('authMsg').innerHTML = html ? `<div class="msg ${type}">${html}</div>` : '';
 }
 
-/* ───────── 사례 목록 ───────── */
-function renderList() {
-  const el = document.getElementById('case-list');
-  const ids = Object.keys(cases);
-  if(!ids.length) {
-    el.innerHTML = `<div class="empty-tip"><div class="ei">📋</div><p style="font-weight:600;margin-bottom:4px">사례가 없습니다</p><p>아래 버튼으로 추가하세요</p></div>`;
+/* ═══════════════════════════════════════════════════════════════
+   인증 — 멀티 기관 · 승인제 (구조: orgCodes 분리 = 수정 #3)
+   ═══════════════════════════════════════════════════════════════ */
+function switchAuth(mode){
+  setMsg('');
+  ['formLogin','formSignup','formOrg','formResume'].forEach(f=>$(f).classList.add('hide'));
+  $('authTabs').classList.toggle('hide', mode==='resume');
+  $('tabLogin').classList.toggle('on', mode==='login');
+  $('tabSignup').classList.toggle('on', mode!=='login');
+  if(mode==='login') $('formLogin').classList.remove('hide');
+  else if(mode==='signup') $('formSignup').classList.remove('hide');
+  else if(mode==='org') $('formOrg').classList.remove('hide');
+  else $('formResume').classList.remove('hide');
+}
+
+async function doLogin(){
+  const email = $('liEmail').value.trim(), pw = $('liPw').value;
+  if(!email || !pw){ setMsg('이메일과 비밀번호를 모두 입력해 주세요.'); return; }
+  setMsg(''); $('btnLogin').disabled = true;
+  try{ await auth.signInWithEmailAndPassword(email, pw); }
+  catch(e){ setMsg(authErr(e)); }
+  $('btnLogin').disabled = false;
+}
+
+/* 코드 → 기관 확인 후 users + orgMembers 이중 기록 */
+async function registerMember(user, name, code){
+  let orgId = null;
+  try{ const s = await db.ref('orgCodes/'+code).once('value'); orgId = s.val(); }catch(e){}
+  if(!orgId){
+    setMsg('가입코드와 일치하는 기관이 없습니다. 코드를 다시 확인해 주세요.');
+    try{ await user.delete(); }catch(e){ await auth.signOut(); }   // 유령 계정 방지 (수정 #6 계열)
+    return false;
+  }
+  const rec = { name, email:user.email, orgId, role:'member', approved:false, createdAt:Date.now() };
+  try{
+    await db.ref('users/'+user.uid).set(rec);
+    await db.ref('orgMembers/'+orgId+'/'+user.uid).set({
+      name, email:user.email, role:'member', approved:false, createdAt:rec.createdAt
+    });
+  }catch(e){ setMsg('가입 처리 중 문제가 발생했습니다. 아래 "가입 마무리"로 다시 시도해 주세요.'); return false; }
+  return true;
+}
+
+async function doSignup(){
+  const name = $('suName').value.trim();
+  const code = $('suCode').value.trim().toUpperCase();
+  const email= $('suEmail').value.trim();
+  const pw   = $('suPw').value;
+  if(!name || !code || !email || !pw){ setMsg('모든 항목을 입력해 주세요.'); return; }
+  setMsg(''); $('btnSignup').disabled = true; authBusy = true;
+
+  let cred;
+  try{ cred = await auth.createUserWithEmailAndPassword(email, pw); }
+  catch(e){ setMsg(authErr(e)); $('btnSignup').disabled=false; authBusy=false; return; }
+
+  const ok = await registerMember(cred.user, name, code);
+  $('btnSignup').disabled = false; authBusy = false;
+  if(ok) routeUser(cred.user);
+}
+
+/* 가입이 중간에 끊긴 계정 마무리 */
+async function doResume(){
+  const name = $('rsName').value.trim();
+  const code = $('rsCode').value.trim().toUpperCase();
+  if(!name || !code){ setMsg('이름과 가입코드를 입력해 주세요.'); return; }
+  const user = auth.currentUser;
+  if(!user){ location.reload(); return; }
+  $('btnResume').disabled = true;
+  const ok = await registerMember(user, name, code);
+  $('btnResume').disabled = false;
+  if(ok) routeUser(user);
+}
+
+async function doCreateOrg(){
+  const orgName = $('orgName').value.trim();
+  const name    = $('orgAdmin').value.trim();
+  const email   = $('orgEmail').value.trim();
+  const pw      = $('orgPw').value;
+  if(!orgName || !name || !email || !pw){ setMsg('모든 항목을 입력해 주세요.'); return; }
+  setMsg(''); $('btnOrg').disabled = true; authBusy = true;
+
+  let cred;
+  try{ cred = await auth.createUserWithEmailAndPassword(email, pw); }
+  catch(e){ setMsg(authErr(e)); $('btnOrg').disabled=false; authBusy=false; return; }
+
+  try{
+    const orgId = db.ref('orgs').push().key;
+    await db.ref('orgs/'+orgId).set({ name:orgName, ownerUid:cred.user.uid, createdAt:Date.now() });
+
+    // 가입코드 발급 (충돌 시 재생성 — 규칙이 중복 생성을 거부)
+    const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = null;
+    for(let i=0; i<5 && !code; i++){
+      const c = Array.from({length:6},()=>A[Math.floor(Math.random()*A.length)]).join('');
+      try{ await db.ref('orgCodes/'+c).set(orgId); code = c; }catch(e){}
+    }
+    if(!code) throw new Error('code');
+    await db.ref('orgPrivate/'+orgId).set({ joinCode:code });
+
+    await db.ref('users/'+cred.user.uid).set({
+      name, email, orgId, role:'admin', approved:true, createdAt:Date.now()
+    });
+    await db.ref('orgMembers/'+orgId+'/'+cred.user.uid).set({
+      name, email, role:'admin', approved:true, createdAt:Date.now()
+    });
+    authBusy = false; $('btnOrg').disabled = false;
+    routeUser(cred.user);
+  }catch(e){
+    authBusy = false; $('btnOrg').disabled = false;
+    setMsg('기관 등록 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.');
+  }
+}
+
+async function doReset(){
+  const email = $('liEmail').value.trim();
+  if(!email){ setMsg('비밀번호를 재설정할 이메일을 먼저 입력해 주세요.'); return; }
+  try{
+    await auth.sendPasswordResetEmail(email);
+    setMsg('재설정 메일을 보냈습니다. 받은편지함을 확인해 주세요.','ok');
+  }catch(e){ setMsg(authErr(e)); }
+}
+
+function doLogout(){
+  sessionStorage.removeItem(PIN_KEY);
+  auth.signOut().then(()=>location.reload());
+}
+
+/* ── 승인 대기 / 거절 화면 ── */
+function showPending(kind){
+  if(kind==='rejected'){
+    $('pendTitle').textContent = '가입이 승인되지 않았습니다';
+    $('pendText').innerHTML = `<b style="color:var(--sage-deep);">${esc(S.org.name)}</b> 관리자가 가입을 거절했습니다.<br>다시 신청하거나 관리자에게 문의하세요.`;
+    $('pendReapply').hidden = false;
+  }else{
+    $('pendTitle').textContent = '승인을 기다리는 중입니다';
+    $('pendText').innerHTML = `<b style="color:var(--sage-deep);">${esc(S.org.name)}</b> 관리자가 계정을 승인하면<br>바로 이용할 수 있습니다.`;
+    $('pendReapply').hidden = true;
+  }
+  show('viewPending');
+}
+async function reapply(){
+  try{
+    await db.ref('users/'+S.uid+'/rejected').set(false);
+    await db.ref('orgMembers/'+S.me.orgId+'/'+S.uid+'/rejected').set(false);
+    toast('다시 신청했습니다.');
+    showPending('wait');
+  }catch(e){ toast('신청에 실패했습니다.'); }
+}
+
+/* ── 라우팅 ── */
+async function routeUser(user){
+  S.uid = user.uid;
+  let uSnap;
+  try{ uSnap = await db.ref('users/'+user.uid).once('value'); }
+  catch(e){ toast('계정 정보를 불러오지 못했습니다.'); show('viewAuth'); switchAuth('login'); return; }
+
+  if(!uSnap.exists()){                 // 가입이 중간에 끊긴 계정 → 마무리 폼 (수정 #6 계열)
+    show('viewAuth'); switchAuth('resume'); return;
+  }
+  S.me = uSnap.val();
+
+  const oSnap = await db.ref('orgs/'+S.me.orgId).once('value');
+  S.org = oSnap.val() || { name:'(기관 정보 없음)' };
+
+  if(S.me.rejected){ showPending('rejected'); return; }
+  if(!S.me.approved){ showPending('wait'); return; }
+  if(!S.me.pinHash){ startPin('set'); return; }
+  if(sessionStorage.getItem(PIN_KEY) === user.uid){ enterApp(); return; }
+  startPin('verify');
+}
+
+auth.onAuthStateChanged(user => {
+  $('boot').classList.add('hide');
+  if(authBusy) return;                 // 가입 흐름이 직접 routeUser 호출
+  if(!user){ show('viewAuth'); switchAuth('login'); return; }
+  routeUser(user);
+});
+
+/* ═══ PIN ═══ */
+function startPin(mode){
+  S.pinMode = mode; S.pinBuf = ''; S._pinFirst = null;
+  const t = { set:['PIN을 설정하세요','앱을 열 때마다 이 6자리를 입력합니다.'],
+              verify:['PIN 입력','내담자 정보를 보호합니다. 6자리 PIN을 입력하세요.'],
+              change:['새 PIN을 설정하세요','바꿀 6자리 PIN을 입력하세요.'] }[mode];
+  $('pinTitle').textContent = t[0];
+  $('pinSub').textContent   = t[1];
+  buildPad(); paintDots();
+  show('viewPin');
+}
+function buildPad(){
+  const pad = $('pinPad'); pad.innerHTML='';
+  [1,2,3,4,5,6,7,8,9,'','0','←'].forEach(k=>{
+    const b = document.createElement('button');
+    if(k===''){ b.className='blank'; b.disabled=true; }
+    else { b.textContent = k; b.onclick = () => k==='←' ? pinDel() : pinAdd(String(k)); }
+    pad.appendChild(b);
+  });
+}
+function paintDots(){
+  [...$('pinDots').children].forEach((d,i)=> d.classList.toggle('on', i < S.pinBuf.length));
+}
+function pinAdd(n){
+  if(S.pinBuf.length>=6) return;
+  S.pinBuf += n; paintDots();
+  if(S.pinBuf.length===6) setTimeout(pinSubmit,140);
+}
+function pinDel(){ S.pinBuf = S.pinBuf.slice(0,-1); paintDots(); }
+function pinFail(msg){
+  $('pinCard').classList.add('shake');
+  setTimeout(()=>$('pinCard').classList.remove('shake'),340);
+  S.pinBuf=''; paintDots(); toast(msg);
+}
+async function pinSubmit(){
+  const pin = S.pinBuf;
+  if(S.pinMode==='verify'){
+    const h = await pinHash(pin);
+    if(h === S.me.pinHash){ sessionStorage.setItem(PIN_KEY, S.uid); enterApp(); }
+    else pinFail('PIN이 맞지 않습니다.');
     return;
   }
-  el.innerHTML = ids.map(id => {
-    const c = cases[id];
-    const isActive = id === currentId ? ' active' : '';
-    return `<div class="case-card${isActive}" onclick="selectCase('${id}')">
-      <div class="case-av">${(c.name||'?').slice(0,2)}</div>
-      <div style="flex:1;min-width:0">
-        <div class="case-name">${c.name||'이름없음'}</div>
-        <div class="case-sub">${c.sw||'담당자 미지정'}</div>
+  if(!S._pinFirst){
+    S._pinFirst = pin; S.pinBuf=''; paintDots();
+    $('pinTitle').textContent = 'PIN 확인';
+    $('pinSub').textContent   = '한 번 더 입력해 주세요.';
+    return;
+  }
+  if(S._pinFirst !== pin){
+    S._pinFirst = null;
+    $('pinTitle').textContent = S.pinMode==='set' ? 'PIN을 설정하세요' : '새 PIN을 설정하세요';
+    $('pinSub').textContent   = '처음부터 다시 입력해 주세요.';
+    pinFail('두 번 입력한 PIN이 다릅니다.');
+    return;
+  }
+  const h = await pinHash(pin);
+  try{ await db.ref('users/'+S.uid+'/pinHash').set(h); }
+  catch(e){ pinFail('PIN 저장에 실패했습니다.'); return; }
+  S.me.pinHash = h;
+  sessionStorage.setItem(PIN_KEY, S.uid);
+  toast('PIN이 설정되었습니다.');
+  enterApp();
+}
+function openPinChange(){ sessionStorage.removeItem(PIN_KEY); startPin('change'); }
+
+/* ═══════════════════════════════════════════════════════════════
+   앱 진입 · 케이스 목록  (구조: cases/{orgId}/{caseId} = 수정 #1)
+   ═══════════════════════════════════════════════════════════════ */
+function isDesktop(){ return window.matchMedia('(min-width:1024px)').matches; }
+function updateNewBtn(){
+  const dt = isDesktop();
+  $('deskNew').style.display = dt ? 'flex' : 'none';
+  $('mobNew').style.display  = (!dt && S.tab==='cases' && $('app').classList.contains('on')) ? 'flex' : 'none';
+}
+
+function enterApp(){
+  const initial = (S.me.name||'?').trim().slice(0,1);
+  ['hdrAv','sideAv','meAv'].forEach(i=> $(i).textContent = initial);
+  $('greet').textContent  = `안녕하세요, ${S.me.name} 선생님`;
+  $('hdrOrg').textContent = S.org.name;
+  $('sideNm').textContent = S.me.name;
+  $('sideOrg').textContent= S.org.name;
+  $('meNm').textContent   = S.me.name;
+  $('meEmail').textContent= S.me.email;
+  $('meOrg').textContent  = S.org.name;
+
+  const isAdmin = S.me.role==='admin';
+  $('meRole').textContent = isAdmin ? '관리자' : '직원';
+  $('sideAdmin').classList.toggle('hide', !isAdmin);
+  $('tabBtnAdmin').classList.toggle('hide', !isAdmin);
+  if(isAdmin) loadAdmin();
+
+  show('app');
+  goTab(S.tab==='admin' && !isAdmin ? 'cases' : S.tab);
+  watchCases();
+  updateNewBtn();
+}
+
+/* 수정 #5: off() 후 on() — 리스너 중복 방지 */
+function watchCases(){
+  if(casesRef) casesRef.off();
+  casesRef = db.ref('cases/'+S.me.orgId);
+  casesRef.on('value', snap=>{
+    const all = {};
+    Object.entries(snap.val()||{}).forEach(([id,c])=>{ if(!c.deleted) all[id]=c; });
+    S.allCases = all;
+    const visible = {};
+    Object.entries(all).forEach(([id,c])=>{
+      const mine   = c.ownerUid === S.uid;
+      const shared = c.visibility === 'org';
+      const admin  = S.me.role === 'admin';
+      if(mine || shared || admin) visible[id] = c;
+    });
+    S.cases = visible;
+    renderCases();
+    if(S.me.role==='admin') renderAdminCases(all);
+  }, err => toast('케이스를 불러오지 못했습니다.'));
+}
+
+function renderCases(){
+  const q = ($('q').value||'').trim().toLowerCase();
+  let list = Object.entries(S.cases);
+  if(q) list = list.filter(([id,c]) =>
+    (c.title||'').toLowerCase().includes(q) || (c.caseNo||'').toLowerCase().includes(q));
+  list.sort((a,b)=> (b[1].updatedAt||0) - (a[1].updatedAt||0));
+
+  const weekAgo = Date.now() - 7*864e5;
+  $('stTotal').textContent = Object.keys(S.cases).length;
+  $('stWeek').textContent  = Object.values(S.cases).filter(c=>(c.updatedAt||0)>weekAgo).length;
+  $('caseCount').textContent = list.length ? `${list.length}건` : '';
+
+  const el = $('caseList');
+  if(!list.length){
+    el.innerHTML = `<div class="empty">
+      <svg width="46" height="42" viewBox="0 0 46 42"><rect x="4" y="3" width="14" height="14" fill="none" stroke="#5B6E67" stroke-width="2"/><circle cx="35" cy="10" r="7" fill="none" stroke="#5B6E67" stroke-width="2"/><line x1="18" y1="10" x2="28" y2="10" stroke="#5B6E67" stroke-width="2"/><path d="M23 10v14h-6" fill="none" stroke="#5B6E67" stroke-width="2"/><rect x="10" y="25" width="14" height="14" fill="none" stroke="#5B6E67" stroke-width="2"/></svg>
+      <b>${q ? '검색 결과가 없습니다' : '첫 케이스를 만들어 보세요'}</b>
+      <p>${q ? '다른 이름이나 사례번호로 찾아보세요.' : '가족 구조를 그리고, 상태를 코딩해 기록으로 남깁니다.'}</p>
+    </div>`;
+    return;
+  }
+  el.innerHTML = list.map(([id,c])=>{
+    const mine = c.ownerUid===S.uid;
+    return `<div class="case" onclick="openCanvas('${id}')">
+      <div class="thumb">${miniGeno(c)}</div>
+      <div class="case-body">
+        <div class="nm">${esc(c.title||'제목 없음')}${riskDot(c)}</div>
+        <div class="mt">${c.gen||1}세대 · ${c.count||0}명${c.caseNo?' · '+esc(c.caseNo):''}</div>
+        <div class="chips">
+          <span class="chip ${c.visibility==='org'?'shared':'priv'}">${c.visibility==='org'?'기관 공유':'비공개'}</span>
+          ${!mine ? `<span class="chip">${esc(c.ownerName||'')}</span>` : ''}
+          ${riskChips(c)}
+        </div>
       </div>
+      <div class="case-time">${timeAgo(c.updatedAt)}</div>
     </div>`;
   }).join('');
 }
 
-function selectCase(id) {
-  currentId = id;
-  renderList();
-  loadCaseView();
-  // 모바일: 사이드바 숨기기
-  if(window.innerWidth <= 640) {
-    document.getElementById('sidebar').classList.add('hidden');
+function riskChips(c){
+  const s = c.riskSummary || {};
+  let out = '';
+  if(s.addict) out += `<span class="chip addict">중독 ${s.addict}</span>`;
+  if(s.mental) out += `<span class="chip mental">우울·정신 ${s.mental}</span>`;
+  return out;
+}
+function riskDot(c){
+  const s = c.riskSummary || {};
+  if(s.addict) return `<span style="width:8px;height:8px;border-radius:50%;background:var(--st-addict);flex:0 0 8px;"></span>`;
+  if(s.mental) return `<span style="width:8px;height:8px;border-radius:50%;background:var(--st-mental);flex:0 0 8px;"></span>`;
+  return '';
+}
+
+function miniGeno(c){
+  const t = c.thumb;
+  if(!t || !t.n || !t.n.length){
+    return `<svg width="46" height="42" viewBox="0 0 46 42"><rect x="6" y="8" width="10" height="10" fill="none" stroke="#A9CFC3" stroke-width="1.6"/><circle cx="34" cy="13" r="5" fill="none" stroke="#A9CFC3" stroke-width="1.6"/><line x1="16" y1="13" x2="29" y2="13" stroke="#A9CFC3" stroke-width="1.6"/><path d="M22 13v10h-4" fill="none" stroke="#A9CFC3" stroke-width="1.6"/><rect x="13" y="24" width="10" height="10" fill="none" stroke="#A9CFC3" stroke-width="1.6"/></svg>`;
   }
-}
-
-function mobileBack() {
-  document.getElementById('sidebar').classList.remove('hidden');
-}
-
-function openModal() {
-  document.getElementById('nc-name').value = '';
-  document.getElementById('nc-sw').value = '';
-  document.getElementById('nc-date').value = new Date().toISOString().slice(0,10);
-  document.getElementById('modal-new').classList.add('show');
-  setTimeout(() => document.getElementById('nc-name').focus(), 100);
-}
-function closeModal() { document.getElementById('modal-new').classList.remove('show'); }
-document.getElementById('modal-new').addEventListener('click', e => {
-  if(e.target === document.getElementById('modal-new')) closeModal();
-});
-document.addEventListener('keydown', e => {
-  if(e.key === 'Escape') { closeModal(); cancelRel(); cancelCohabGroup(); }
-  if(e.key === 'Enter' && relMode === 'family') commitFamily();
-});
-
-function createCase() {
-  const name = document.getElementById('nc-name').value.trim();
-  if(!name) { alert('CT 성명을 입력하세요.'); return; }
-  const id = 'c_' + Date.now();
-  cases[id] = {
-    id, name,
-    sw: document.getElementById('nc-sw').value.trim(),
-    date: document.getElementById('nc-date').value,
-    info: {}, memos: [],
-    genogram: { nodes: [], edges: [] }
-  };
-  save(); closeModal(); selectCase(id);
-}
-
-function deleteCase() {
-  if(!currentId) return;
-  const c = cases[currentId];
-  if(!confirm(`'${c.name}' 사례를 삭제하시겠습니까?`)) return;
-  delete cases[currentId];
-  currentId = null;
-  save(); renderList();
-  document.getElementById('empty-main').style.display = '';
-  document.getElementById('case-view').style.display = 'none';
-}
-
-/* ───────── 케이스 뷰 로드 ───────── */
-function loadCaseView() {
-  const c = cases[currentId]; if(!c) return;
-  document.getElementById('hdr-title').textContent = c.name || '이름없음';
-  document.getElementById('hdr-sub').textContent = (c.sw || '담당자 미지정') + (c.date ? ' · ' + c.date : '');
-
-  const info = c.info || {};
-  ['name','birth','sex','tel','addr','sw','date','diag','svc','reason','summary'].forEach(k => {
-    const el = document.getElementById('fi-'+k); if(el) el.value = info[k] || '';
-  });
-
-  const g = c.genogram || { nodes:[], edges:[], groups:[] };
-  nodes = JSON.parse(JSON.stringify(g.nodes || []));
-  edges = JSON.parse(JSON.stringify(g.edges || []));
-  groups = JSON.parse(JSON.stringify(g.groups || []));
-  nodeId = nodes.reduce((m,n) => Math.max(m, n.id+1), 0);
-  edgeId = edges.reduce((m,e) => Math.max(m, e.id+1), 0);
-  groupId = groups.reduce((m,g2) => Math.max(m, g2.id+1), 0);
-  history = []; cancelRel(); cancelCohabGroup(); closeEdit();
-  vpX = 0; vpY = 0; vpScale = 1;
-  render(); renderMemos();
-
-  document.getElementById('empty-main').style.display = 'none';
-  const cv = document.getElementById('case-view');
-  cv.style.display = 'flex'; cv.style.flexDirection = 'column';
-  switchTab('geno');
-}
-
-/* ───────── 탭 전환 ───────── */
-let curTab = 'geno';
-function switchTab(tab) {
-  curTab = tab;
-  document.querySelectorAll('.tab').forEach((b,i) => {
-    b.classList.toggle('active', ['geno','info','memo'][i] === tab);
-  });
-  ['geno','info','memo'].forEach(t => {
-    const p = document.getElementById(t === 'geno' ? 'geno-panel' : t + '-panel');
-    p.classList.toggle('active', t === tab);
-  });
-}
-
-/* ───────── 정보 저장 ───────── */
-let infoTimer = null;
-function saveInfo() {
-  if(!currentId) return;
-  const c = cases[currentId]; if(!c) return;
-  if(!c.info) c.info = {};
-  ['name','birth','sex','tel','addr','sw','date','diag','svc','reason','summary'].forEach(k => {
-    const el = document.getElementById('fi-'+k); if(el) c.info[k] = el.value;
-  });
-  clearTimeout(infoTimer); infoTimer = setTimeout(() => save(), 1000);
-}
-
-/* ───────── 메모 ───────── */
-function addMemo() {
-  const txt = document.getElementById('memo-input').value.trim();
-  if(!txt || !currentId) return;
-  const c = cases[currentId]; if(!c.memos) c.memos = [];
-  c.memos.unshift({ id: Date.now(), text: txt, date: new Date().toLocaleString('ko-KR') });
-  document.getElementById('memo-input').value = '';
-  save(); renderMemos();
-}
-function deleteMemo(mid) {
-  const c = cases[currentId]; if(!c) return;
-  c.memos = (c.memos||[]).filter(m => m.id !== mid);
-  save(); renderMemos();
-}
-function renderMemos() {
-  const c = cases[currentId]; if(!c) return;
-  const list = c.memos || [];
-  document.getElementById('memo-list').innerHTML = list.length
-    ? list.map(m => `<div class="memo-item">
-        <div class="memo-text">${m.text.replace(/\n/g,'<br>')}</div>
-        <div class="memo-meta">
-          <span class="memo-date">${m.date}</span>
-          <button class="memo-del" onclick="deleteMemo(${m.id})">🗑 삭제</button>
-        </div></div>`).join('')
-    : '<p style="color:var(--text3);font-size:13px;text-align:center;padding:20px">메모가 없습니다.</p>';
-}
-
-/* ───────── 가계도 엔진 ───────── */
-const canvas = document.getElementById('geno-canvas');
-const nodesLayer = document.getElementById('nodes-layer');
-const edgesLayer = document.getElementById('edges-layer');
-const groupsLayer = document.getElementById('groups-layer');
-const coupleLayer = document.getElementById('couple-layer');
-
-let nodes = [], edges = [], groups = [], selected = null;
-let dragging = null, dragOffset = {x:0,y:0}, didDrag = false;
-let relMode = null, relFirst = null, relParents = null, relChildren = [];
-let groupMode = false, groupMembers = [];
-let history = [], nodeId = 0, edgeId = 0, groupId = 0;
-const R = 24;
-let vpX = 0, vpY = 0, vpScale = 1;
-
-const REL_LABELS = {
-  family:'직계가족',
-  marriage:'결혼', separated:'벌거', divorce:'이혼', remarry:'재결합',
-  close:'친밀', distant:'소원', enmesh:'밀착', cut:'단절',
-  conflict:'갈등', 'fused-conflict':'융합갈등', hostile:'친밀적대'
-};
-
-function saveHist() { history.push({ n: JSON.stringify(nodes), e: JSON.stringify(edges), g: JSON.stringify(groups) }); }
-function undoAction() {
-  if(!history.length) return;
-  const s = history.pop();
-  nodes = JSON.parse(s.n); edges = JSON.parse(s.e); groups = JSON.parse(s.g||'[]');
-  nodeId = nodes.reduce((m,n) => Math.max(m,n.id+1), 0);
-  edgeId = edges.reduce((m,e) => Math.max(m,e.id+1), 0);
-  groupId = groups.reduce((m,g) => Math.max(m,g.id+1), 0);
-  render(); saveGeno();
-}
-function clearGenogram() {
-  if(!confirm('가계도를 초기화하시겠습니까?')) return;
-  saveHist(); nodes = []; edges = []; groups = []; nodeId = 0; edgeId = 0; groupId = 0;
-  closeEdit(); cancelCohabGroup(); render(); saveGeno();
-}
-
-function addNode(sex) {
-  if(!currentId) return;
-  saveHist();
-  const wrap = document.getElementById('canvas-wrap');
-  const cx = (wrap.clientWidth/2 - vpX) / vpScale;
-  const cy = (wrap.clientHeight/2 - vpY) / vpScale;
-  nodes.push({ id: nodeId++, sex, x: cx+(Math.random()-.5)*120, y: cy+(Math.random()-.5)*80, name:'', age:'', note:'', mark:'', ct:false });
-  render(); saveGeno();
-}
-
-/* ── 좌표 변환 ── */
-function toCanvas(cx, cy) {
-  const r = canvas.getBoundingClientRect();
-  return { x: (cx - r.left - vpX) / vpScale, y: (cy - r.top - vpY) / vpScale };
-}
-function applyVP() {
-  const tf = `translate(${vpX},${vpY}) scale(${vpScale})`;
-  nodesLayer.setAttribute('transform', tf);
-  edgesLayer.setAttribute('transform', tf);
-  groupsLayer.setAttribute('transform', tf);
-  coupleLayer.setAttribute('transform', tf);
-}
-
-/* ── 포인터 이벤트 (드래그) ── */
-let activePtrId = null, ptrMoved = false;
-
-function onPointerDownNode(e, id) {
-  e.preventDefault(); e.stopPropagation();
-  activePtrId = e.pointerId;
-  ptrMoved = false;
-  const pt = toCanvas(e.clientX, e.clientY);
-  dragging = id; didDrag = false;
-  const n = nodes.find(n => n.id === id);
-  dragOffset = { x: pt.x - n.x, y: pt.y - n.y };
-}
-canvas.addEventListener('pointermove', e => {
-  if(dragging === null) return;
-  if(activePtrId !== null && e.pointerId !== activePtrId) return;
-  ptrMoved = true;
-  const pt = toCanvas(e.clientX, e.clientY);
-  const n = nodes.find(n => n.id === dragging);
-  if(n) { n.x = pt.x - dragOffset.x; n.y = pt.y - dragOffset.y; didDrag = true; render(); }
-}, {passive:true});
-canvas.addEventListener('pointerup', e => {
-  if(dragging !== null) {
-    if(didDrag) { saveHist(); saveGeno(); }
-    else onNodeTap(e, dragging);
-    dragging = null; didDrag = false; activePtrId = null;
-  } else if(!ptrMoved) {
-    selected = null; closeEdit(); render();
-  }
-  ptrMoved = false;
-}, {passive:true});
-
-function onNodeTap(e, id) {
-  // 동거 그룹 모드
-  if(groupMode) {
-    if(groupMembers.includes(id)) {
-      groupMembers = groupMembers.filter(x => x !== id);
-    } else {
-      groupMembers.push(id);
-    }
-    const ok = groupMembers.length >= 1;
-    document.getElementById('rel-toast-btn').style.display = ok ? 'block' : 'none';
-    document.getElementById('rel-toast-text').textContent =
-      groupMembers.length === 0 ? '동거 그룹에 포함할 구성원을 클릭하세요'
-      : `${groupMembers.length}명 선택됨 — 더 클릭하거나 완료`;
-    render(); return;
-  }
-  if(relMode === 'family') {
-    if(relParents && relParents.includes(id)) { relParents = relParents.filter(x=>x!==id); updateToast(); render(); return; }
-    if(relChildren.includes(id)) { relChildren = relChildren.filter(x=>x!==id); updateToast(); render(); return; }
-    if(!relParents) { relParents = [id]; updateToast(); render(); return; }
-    if(relParents.length < 2 && relChildren.length === 0) { relParents = [...relParents, id]; updateToast(); render(); return; }
-    relChildren = [...relChildren, id]; updateToast(); render(); return;
-  }
-  if(relMode) {
-    if(relFirst === null) { relFirst = id; updateToast(); render(); return; }
-    if(relFirst === id) { cancelRel(); return; }
-    saveHist();
-    const dup = edges.find(ex => ex.type === relMode && ((ex.a===relFirst&&ex.b===id)||(ex.a===id&&ex.b===relFirst)));
-    if(!dup) edges.push({ id: edgeId++, a: relFirst, b: id, type: relMode });
-    cancelRel(); render(); saveGeno(); return;
-  }
-  selected = id; openEdit(id); render();
-}
-
-/* ── 핀치줌 + 터치팬 ── */
-let tc=[], pinchD0=0, pinchScale0=1, pinchMid0={x:0,y:0}, pinchVp0={x:0,y:0};
-let panT0=null, panVp0={x:0,y:0};
-
-canvas.addEventListener('touchstart', e => {
-  tc = [...e.touches];
-  if(tc.length===2) {
-    dragging = null;
-    pinchD0 = Math.hypot(tc[1].clientX-tc[0].clientX, tc[1].clientY-tc[0].clientY);
-    pinchScale0 = vpScale;
-    const r = canvas.getBoundingClientRect();
-    pinchMid0 = { x:(tc[0].clientX+tc[1].clientX)/2-r.left, y:(tc[0].clientY+tc[1].clientY)/2-r.top };
-    pinchVp0 = { x:vpX, y:vpY };
-  } else if(tc.length===1 && dragging===null) {
-    panT0 = { x:tc[0].clientX, y:tc[0].clientY }; panVp0 = { x:vpX, y:vpY };
-  }
-}, {passive:true});
-
-canvas.addEventListener('touchmove', e => {
-  if(e.touches.length===2) {
-    e.preventDefault();
-    const d = Math.hypot(e.touches[1].clientX-e.touches[0].clientX, e.touches[1].clientY-e.touches[0].clientY);
-    const ns = Math.max(.3, Math.min(3, pinchScale0*(d/pinchD0)));
-    const r = canvas.getBoundingClientRect();
-    const mid = { x:(e.touches[0].clientX+e.touches[1].clientX)/2-r.left, y:(e.touches[0].clientY+e.touches[1].clientY)/2-r.top };
-    const ratio = ns/pinchScale0;
-    vpX = pinchMid0.x - ratio*(pinchMid0.x-pinchVp0.x) + (mid.x-pinchMid0.x);
-    vpY = pinchMid0.y - ratio*(pinchMid0.y-pinchVp0.y) + (mid.y-pinchMid0.y);
-    vpScale = ns; applyVP();
-  } else if(e.touches.length===1 && dragging===null && panT0) {
-    ptrMoved = true;
-    vpX = panVp0.x + (e.touches[0].clientX - panT0.x);
-    vpY = panVp0.y + (e.touches[0].clientY - panT0.y);
-    applyVP();
-  }
-}, {passive:false});
-canvas.addEventListener('touchend', () => { panT0 = null; }, {passive:true});
-
-/* ── 마우스 팬 + 휠줌 ── */
-let mPan=false, mPanStart=null, mPanVp=null;
-canvas.addEventListener('mousedown', e => {
-  if(dragging!==null || e.button!==0) return;
-  mPan=true; mPanStart={x:e.clientX,y:e.clientY}; mPanVp={x:vpX,y:vpY};
-});
-canvas.addEventListener('mousemove', e => {
-  if(mPan && dragging===null) {
-    ptrMoved=true; vpX=mPanVp.x+(e.clientX-mPanStart.x); vpY=mPanVp.y+(e.clientY-mPanStart.y); applyVP();
-  }
-});
-canvas.addEventListener('mouseup', () => { mPan=false; });
-canvas.addEventListener('wheel', e => {
-  e.preventDefault();
-  const d = e.deltaY > 0 ? .9 : 1.1;
-  const r = canvas.getBoundingClientRect();
-  const mx=e.clientX-r.left, my=e.clientY-r.top;
-  const ns = Math.max(.3, Math.min(3, vpScale*d));
-  const ratio = ns/vpScale;
-  vpX=mx-ratio*(mx-vpX); vpY=my-ratio*(my-vpY); vpScale=ns; applyVP();
-}, {passive:false});
-
-/* ── 편집 패널 ── */
-function openEdit(id) {
-  const n = nodes.find(n => n.id===id); if(!n) return;
-  document.getElementById('ep-name').value = n.name || '';
-  document.getElementById('ep-age').value = n.age || '';
-  document.getElementById('ep-note').value = n.note || '';
-  document.getElementById('ep-mark').value = n.mark || '';
-  document.getElementById('ep-ct').checked = !!n.ct;
-  document.getElementById('edit-panel').classList.add('show');
-}
-function closeEdit() {
-  document.getElementById('edit-panel').classList.remove('show');
-  selected = null;
-}
-function updateNode() {
-  const n = nodes.find(n => n.id===selected); if(!n) return;
-  n.name = document.getElementById('ep-name').value;
-  n.age = document.getElementById('ep-age').value;
-  n.note = document.getElementById('ep-note').value;
-  n.mark = document.getElementById('ep-mark').value;
-  n.ct = document.getElementById('ep-ct').checked;
-  render(); saveGeno();
-}
-function deleteNode() {
-  if(selected===null) return;
-  if(!confirm('이 구성원을 삭제하시겠습니까?')) return;
-  saveHist();
-  nodes = nodes.filter(n => n.id!==selected);
-  edges = edges.filter(e => e.a!==selected && e.b!==selected
-    && !(e.type==='family' && (e.parents||[]).includes(selected))
-    && !(e.type==='family' && (e.children||[]).includes(selected)));
-  closeEdit(); render(); saveGeno();
-}
-// 편집 패널 바깥 클릭 시 닫기
-document.getElementById('canvas-wrap').addEventListener('pointerdown', e => {
-  const ep = document.getElementById('edit-panel');
-  if(ep.classList.contains('show') && !ep.contains(e.target)) closeEdit();
-});
-
-/* ── 관계선 모드 ── */
-function startRel(type) {
-  relMode=type; relFirst=null; relParents=null; relChildren=[];
-  document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
-  const btn = document.getElementById('rb-'+type);
-  if(btn) btn.classList.add('active');
-  updateToast();
-  document.getElementById('rel-toast').classList.add('show');
-  document.getElementById('cancel-rel').style.display = 'block';
-  closeEdit();
-}
-function cancelRel() {
-  relMode=null; relFirst=null; relParents=null; relChildren=[];
-  document.querySelectorAll('.tb-btn').forEach(b => b.classList.remove('active'));
-  document.getElementById('rel-toast').classList.remove('show');
-  document.getElementById('cancel-rel').style.display = 'none';
-  render();
-}
-function updateToast() {
-  const btn = document.getElementById('rel-toast-btn');
-  if(relMode==='family') {
-    const ok = relParents && relParents.length>=1 && relChildren.length>=1;
-    btn.style.display = ok ? 'block' : 'none';
-    let msg;
-    if(!relParents) msg = '[직계가족] 부모를 클릭하세요 (최대 2명)';
-    else if(relParents.length===1 && relChildren.length===0) msg = '두 번째 부모 또는 자녀를 클릭하세요';
-    else if(relChildren.length===0) msg = '자녀를 클릭하세요 (여러 명 가능)';
-    else msg = `자녀 ${relChildren.length}명 — 더 추가하거나 완료 버튼 클릭`;
-    document.getElementById('rel-toast-text').textContent = msg;
-  } else {
-    btn.style.display = 'none';
-    document.getElementById('rel-toast-text').textContent =
-      relFirst===null ? `[${REL_LABELS[relMode]}] 첫 번째 구성원을 클릭하세요` : `[${REL_LABELS[relMode]}] 두 번째 구성원을 클릭하세요`;
-  }
-}
-function commitFamily() {
-  if(!relParents || relParents.length<1 || relChildren.length<1) return;
-  saveHist();
-  const ct = document.getElementById('family-couple-type')?.value || 'marriage';
-  edges.push({ id: edgeId++, type:'family', coupleType:ct, parents:[...relParents], children:[...relChildren] });
-  cancelRel(); render(); saveGeno();
-}
-
-/* ── 저장 ── */
-let genoTimer = null;
-function saveGeno() {
-  if(!currentId) return;
-  const c = cases[currentId]; if(!c) return;
-  c.genogram = { nodes: JSON.parse(JSON.stringify(nodes)), edges: JSON.parse(JSON.stringify(edges)), groups: JSON.parse(JSON.stringify(groups)) };
-  clearTimeout(genoTimer); genoTimer = setTimeout(() => save(), 600);
-}
-
-/* ── 렌더링 ── */
-function render() { renderGroups(); renderEdges(); renderNodes(); applyVP(); }
-
-function svgEl(tag, attrs) {
-  const el = document.createElementNS('http://www.w3.org/2000/svg', tag);
-  Object.entries(attrs).forEach(([k,v]) => el.setAttribute(k,v));
-  return el;
-}
-function svgTxt(x,y,text,fill,size,anchor) {
-  const t = svgEl('text', {x,y,fill,'font-size':size,'text-anchor':anchor,'font-family':'sans-serif'});
-  t.textContent = text; return t;
-}
-function makeShape(sex, x, y, r, fill, stroke, sw) {
-  if(sex==='male') return svgEl('rect', {x:x-r,y:y-r,width:r*2,height:r*2,rx:'3',fill,stroke,'stroke-width':sw});
-  if(sex==='female') return svgEl('circle', {cx:x,cy:y,r,fill,stroke,'stroke-width':sw});
-  return svgEl('polygon', {points:`${x},${y-r} ${x+r},${y+r*.7} ${x-r},${y+r*.7}`,fill,stroke,'stroke-width':sw});
-}
-
-function renderNodes() {
-  nodesLayer.innerHTML = '';
-  nodes.forEach(n => {
-    const g = svgEl('g', {'data-id': n.id});
-    const isSel  = selected === n.id;
-    const isPar  = relMode==='family' && relParents && relParents.includes(n.id);
-    const isChild= relMode==='family' && relChildren.includes(n.id);
-    const isFirst= relMode && relMode!=='family' && relFirst===n.id;
-
-    // CT 이중 윤곽
-    if(n.ct) g.appendChild(makeShape(n.sex, n.x, n.y, R+7, 'none', '#2563EB', '2'));
-    // 관계 모드 하이라이트
-    if(isPar)  { const h=makeShape(n.sex,n.x,n.y,R+6,'none','#2563EB','2.5'); h.setAttribute('stroke-dasharray','5,3'); g.appendChild(h); }
-    if(isChild){ const h=makeShape(n.sex,n.x,n.y,R+6,'none','#059669','2.5'); h.setAttribute('stroke-dasharray','5,3'); g.appendChild(h); }
-    if(isFirst){ const h=makeShape(n.sex,n.x,n.y,R+6,'none','#2563EB','2.5'); h.setAttribute('stroke-dasharray','5,3'); g.appendChild(h); }
-
-    // ── 문제 반쪽 채움 (배경 먼저) ──
-    const fillColor = '#334155';
-    const mark = n.mark || '';
-    if(mark.startsWith('prob-') || mark==='deceased') {
-      // 흰 배경 도형 먼저
-      g.appendChild(makeShape(n.sex, n.x, n.y, R, '#fff', isSel?'#2563EB':'#334155', isSel?'2.5':'1.8'));
-    }
-
-    if(mark === 'prob-drug') {
-      // 좌상 1/4 채움 (약물/정신·신체 문제)
-      drawQuarterFill(g, n, 'top-left', fillColor);
-    } else if(mark === 'prob-severe') {
-      // 가득 채움 (심한 문제)
-      g.appendChild(makeShape(n.sex, n.x, n.y, R, fillColor, isSel?'#2563EB':'#334155', isSel?'2.5':'1.8'));
-    } else if(mark === 'prob-drug-male') {
-      // 우하 1/4 채움 (약물남용 남성)
-      drawQuarterFill(g, n, 'bottom-right', fillColor);
-    } else if(mark === 'prob-suspect') {
-      // 우상 1/4 채움 (의심)
-      drawQuarterFill(g, n, 'top-right', '#94A3B8');
-    } else if(mark === 'prob-recovery') {
-      // 좌하 1/4 채움 (회복)
-      drawQuarterFill(g, n, 'bottom-left', '#6EE7B7');
-    } else {
-      // 일반 흰 배경
-      g.appendChild(makeShape(n.sex, n.x, n.y, R, '#fff', isSel?'#2563EB':'#334155', isSel?'2.5':'1.8'));
-    }
-
-    // ── 사망 X 표시 ──
-    if(mark === 'deceased') {
-      [[-1,-1,1,1],[1,-1,-1,1]].forEach(([dx1,dy1,dx2,dy2]) => {
-        g.appendChild(svgEl('line', {x1:n.x+dx1*R*.75,y1:n.y+dy1*R*.75,x2:n.x+dx2*R*.75,y2:n.y+dy2*R*.75,stroke:'#334155','stroke-width':'2.5','stroke-linecap':'round'}));
-      });
-    }
-
-    // ── 주요 클라이언트 밑줄 ──
-    if(mark === 'ip') {
-      g.appendChild(svgEl('line', {x1:n.x-R,y1:n.y+R+6,x2:n.x+R,y2:n.y+R+6,stroke:'#2563EB','stroke-width':'3.5','stroke-linecap':'round'}));
-    }
-
-    // ── CT 라벨 ──
-    if(n.ct) {
-      const t = svgTxt(n.x+R+8, n.y-R+4, 'CT', '#2563EB', '11', 'start');
-      t.setAttribute('font-weight','700'); g.appendChild(t);
-    }
-
-    // ── 위탁/입양 자녀 표시 (도형 위에 기호) ──
-    if(mark === 'child-foster') {
-      // 점선 외곽선
-      const h = makeShape(n.sex, n.x, n.y, R+5, 'none', '#F59E0B', '2');
-      h.setAttribute('stroke-dasharray','4,3'); g.appendChild(h);
-    }
-    if(mark === 'child-adopted') {
-      // 실선 이중 외곽선 (약간 두꺼운 추가선)
-      const h = makeShape(n.sex, n.x, n.y, R+5, 'none', '#2563EB', '1.5');
-      g.appendChild(h);
-    }
-
-    // ── 이름·나이·메모 텍스트 ──
-    const ny = n.y + R + (n.ct ? 14 : 8);
-    if(n.name) g.appendChild(svgTxt(n.x, ny+13, n.name + (n.age ? ` (${n.age})` : ''), '#334155', '13', 'middle'));
-    if(n.note) g.appendChild(svgTxt(n.x, ny + (n.name ? 28 : 13), n.note, '#94A3B8', '11', 'middle'));
-
-    g.addEventListener('pointerdown', e => onPointerDownNode(e, n.id), {passive:false});
-    nodesLayer.appendChild(g);
-  });
-}
-
-/* 반쪽/1/4 채움 헬퍼 */
-function drawQuarterFill(g, n, quadrant, color) {
-  if(n.sex === 'female') {
-    // 원: clipPath 대신 arc path
-    const r = R;
-    let path;
-    if(quadrant === 'top-left')      path = `M${n.x},${n.y} L${n.x-r},${n.y} A${r},${r} 0 0,1 ${n.x},${n.y-r} Z`;
-    else if(quadrant === 'top-right') path = `M${n.x},${n.y} L${n.x},${n.y-r} A${r},${r} 0 0,1 ${n.x+r},${n.y} Z`;
-    else if(quadrant === 'bottom-right') path = `M${n.x},${n.y} L${n.x+r},${n.y} A${r},${r} 0 0,1 ${n.x},${n.y+r} Z`;
-    else path = `M${n.x},${n.y} L${n.x},${n.y+r} A${r},${r} 0 0,1 ${n.x-r},${n.y} Z`;
-    g.appendChild(svgEl('path', {d:path, fill:color, stroke:'none'}));
-  } else {
-    // 사각형(남성/미상): 1/4 rect
-    const r = R;
-    let rx=n.x, ry=n.y, rw=r, rh=r;
-    if(quadrant==='top-left')       { rx=n.x-r; ry=n.y-r; }
-    else if(quadrant==='top-right') { rx=n.x;   ry=n.y-r; }
-    else if(quadrant==='bottom-right'){ rx=n.x;  ry=n.y;   }
-    else                            { rx=n.x-r; ry=n.y;   }
-    g.appendChild(svgEl('rect', {x:rx, y:ry, width:rw, height:rh, fill:color, stroke:'none'}));
-  }
-}
-
-function renderEdges() {
-  edgesLayer.innerHTML = '';
-  coupleLayer.innerHTML = '';
-
-  /* ── 직계가족 ── */
-  edges.filter(e => e.type==='family').forEach(fe => {
-    const pars = (fe.parents||[]).map(id => nodes.find(n=>n.id===id)).filter(Boolean);
-    const chs  = (fe.children||[]).map(id => nodes.find(n=>n.id===id)).filter(Boolean);
-    if(!pars.length || !chs.length) return;
-    const px = pars.length===2 ? (pars[0].x+pars[1].x)/2 : pars[0].x;
-    const py = pars.length===2 ? (pars[0].y+pars[1].y)/2 : pars[0].y;
-    // 부부 관계선 → coupleLayer (관계선보다 아래 레이어)
-    if(pars.length===2) {
-      const a=pars[0], b=pars[1];
-      const ct = fe.coupleType || 'marriage';
-      const ddx=b.x-a.x, ddy=b.y-a.y, llen=Math.hypot(ddx,ddy)||1;
-      const nnx=ddy/llen, nny2=-ddx/llen;
-      const mmx=(a.x+b.x)/2, mmy=(a.y+b.y)/2;
-      const CL = coupleLayer; // 부부선은 coupleLayer에 그림
-      if(ct==='none') {
-        // 선 없음
-      } else if(ct==='marriage') {
-        CL.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#334155','stroke-width':'2','stroke-linecap':'round'}));
-      } else if(ct==='cohabit') {
-        const l=svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#334155','stroke-width':'2','stroke-linecap':'round'});
-        l.setAttribute('stroke-dasharray','6,4'); CL.appendChild(l);
-        CL.appendChild(svgTxt(mmx,mmy-12,'동거','#64748B','10','middle'));
-      } else if(ct==='separated') {
-        CL.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#94A3B8','stroke-width':'2','stroke-linecap':'round'}));
-        CL.appendChild(svgEl('line',{x1:mmx-nnx*9,y1:mmy-nny2*9,x2:mmx+nnx*9,y2:mmy+nny2*9,stroke:'#94A3B8','stroke-width':'2.5','stroke-linecap':'round'}));
-        CL.appendChild(svgTxt(mmx,mmy-14,'벌거','#94A3B8','10','middle'));
-      } else if(ct==='divorce') {
-        CL.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#94A3B8','stroke-width':'2','stroke-linecap':'round'}));
-        [-7,7].forEach(off=>{
-          const bx2=mmx+ddx/llen*off, by2=mmy+ddy/llen*off;
-          CL.appendChild(svgEl('line',{x1:bx2-nnx*9,y1:by2-nny2*9,x2:bx2+nnx*9,y2:by2+nny2*9,stroke:'#94A3B8','stroke-width':'2.5','stroke-linecap':'round'}));
-        });
-        CL.appendChild(svgTxt(mmx,mmy-14,'이혼','#94A3B8','10','middle'));
-      } else if(ct==='remarry') {
-        CL.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#334155','stroke-width':'2','stroke-linecap':'round'}));
-        [-14,14].forEach(off=>{
-          const bx2=mmx+ddx/llen*off, by2=mmy+ddy/llen*off;
-          CL.appendChild(svgEl('line',{x1:bx2-nnx*9,y1:by2-nny2*9,x2:bx2+nnx*9,y2:by2+nny2*9,stroke:'#94A3B8','stroke-width':'2','stroke-linecap':'round'}));
-        });
-        const bx3=mmx+ddx/llen*26, by3=mmy+ddy/llen*26;
-        CL.appendChild(svgEl('line',{x1:bx3-nnx*9,y1:by3-nny2*9,x2:bx3+nnx*9,y2:by3+nny2*9,stroke:'#334155','stroke-width':'2.5','stroke-linecap':'round'}));
-        CL.appendChild(svgTxt(mmx,mmy-14,'재결합','#334155','10','middle'));
-      } else {
-        CL.appendChild(svgEl('line',{x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#334155','stroke-width':'2','stroke-linecap':'round'}));
-      }
-    }
-    // 부부선 중간점(px, py)에서 자녀 수평선까지 수직 연결
-    const childTopY = Math.min(...chs.map(c => c.y));
-    const horizY = Math.max(py + 50, childTopY - R - 16);
-    const cxs = chs.map(c => c.x);
-    edgesLayer.appendChild(svgEl('line', {x1:px, y1:py, x2:px, y2:horizY, stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
-    if(chs.length>1) edgesLayer.appendChild(svgEl('line', {x1:Math.min(...cxs), y1:horizY, x2:Math.max(...cxs), y2:horizY, stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
-    chs.forEach(c => {
-      const mark = c.mark || '';
-      if(mark === 'child-foster') {
-        const vline = svgEl('line', {x1:c.x,y1:horizY,x2:c.x,y2:c.y-R-2,stroke:'#F59E0B','stroke-width':'2','stroke-linecap':'round'});
-        vline.setAttribute('stroke-dasharray','5,4'); edgesLayer.appendChild(vline);
-      } else if(mark === 'child-adopted') {
-        const midY = (horizY + c.y-R-2)/2;
-        edgesLayer.appendChild(svgEl('path', {d:`M${c.x},${horizY} L${c.x-8},${midY} L${c.x},${c.y-R-2}`,fill:'none',stroke:'#2563EB','stroke-width':'2','stroke-linejoin':'round','stroke-linecap':'round'}));
-      } else {
-        edgesLayer.appendChild(svgEl('line', {x1:c.x,y1:horizY,x2:c.x,y2:c.y-R-2,stroke:'#334155','stroke-width':'1.8','stroke-linecap':'round'}));
-      }
-    });
-  });
-
-  /* ── 관계선 ── */
-  edges.filter(e => e.type!=='family').forEach(e => {
-    const a = nodes.find(n=>n.id===e.a), b = nodes.find(n=>n.id===e.b);
+  const xs=t.n.map(p=>p.x), ys=t.n.map(p=>p.y);
+  const minX=Math.min(...xs), maxX=Math.max(...xs), minY=Math.min(...ys), maxY=Math.max(...ys);
+  const w=Math.max(maxX-minX,1), h=Math.max(maxY-minY,1);
+  const k=Math.min(40/w, 34/h), ox=(56-w*k)/2-minX*k, oy=(50-h*k)/2-minY*k;
+  const P = p => [p.x*k+ox, p.y*k+oy];
+  let svg = `<svg width="56" height="50" viewBox="0 0 56 50">`;
+  (t.l||[]).forEach(l=>{
+    const a=t.n.find(p=>p.i===l.a), b=t.n.find(p=>p.i===l.b);
     if(!a||!b) return;
-    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
-    const dx=b.x-a.x, dy=b.y-a.y, len=Math.hypot(dx,dy)||1;
-    const nx=dy/len, ny2=-dx/len;
-    const type = e.type;
-
-    if(type==='close') {
-      [3,-3].forEach(off => {
-        edgesLayer.appendChild(svgEl('line', {x1:a.x+nx*off,y1:a.y+ny2*off,x2:b.x+nx*off,y2:b.y+ny2*off,stroke:'#059669','stroke-width':'1.8','stroke-linecap':'round'}));
-      });
-    } else if(type==='distant') {
-      const l = svgEl('line', {x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#94A3B8','stroke-width':'2','stroke-linecap':'round'});
-      l.setAttribute('stroke-dasharray','4,4'); edgesLayer.appendChild(l);
-    } else if(type==='enmesh') {
-      [-4,0,4].forEach(off => {
-        edgesLayer.appendChild(svgEl('line', {x1:a.x+nx*off,y1:a.y+ny2*off,x2:b.x+nx*off,y2:b.y+ny2*off,stroke:'#059669','stroke-width':'1.8','stroke-linecap':'round'}));
-      });
-    } else if(type==='cut') {
-      edgesLayer.appendChild(svgEl('line', {x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#64748B','stroke-width':'2','stroke-linecap':'round'}));
-      [-6,6].forEach(off => {
-        const bx=mx+dx/len*off, by=my+dy/len*off;
-        edgesLayer.appendChild(svgEl('line', {x1:bx-nx*8,y1:by-ny2*8,x2:bx+nx*8,y2:by+ny2*8,stroke:'#64748B','stroke-width':'2.5','stroke-linecap':'round'}));
-      });
-    } else if(type==='conflict') {
-      drawZigzag(a.x,a.y,b.x,b.y,'#EF4444','2');
-    } else if(type==='fused-conflict') {
-      [3,-3].forEach(off => {
-        edgesLayer.appendChild(svgEl('line', {x1:a.x+nx*off,y1:a.y+ny2*off,x2:b.x+nx*off,y2:b.y+ny2*off,stroke:'#059669','stroke-width':'1.8'}));
-      });
-      drawZigzag(a.x+nx*8,a.y+ny2*8,b.x+nx*8,b.y+ny2*8,'#EF4444','1.5');
-    } else if(type==='hostile') {
-      [3,-3].forEach(off => {
-        edgesLayer.appendChild(svgEl('line', {x1:a.x+nx*off,y1:a.y+ny2*off,x2:b.x+nx*off,y2:b.y+ny2*off,stroke:'#059669','stroke-width':'1.8'}));
-      });
-      drawZigzag(a.x,a.y,b.x,b.y,'#EF4444','1.5');
-    } else if(type==='marriage') {
-      edgesLayer.appendChild(svgEl('line', {x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#334155','stroke-width':'2.2','stroke-linecap':'round'}));
-    } else if(type==='separated') {
-      edgesLayer.appendChild(svgEl('line', {x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#94A3B8','stroke-width':'2.2','stroke-linecap':'round'}));
-      edgesLayer.appendChild(svgEl('line', {x1:mx-nx*9,y1:my-ny2*9,x2:mx+nx*9,y2:my+ny2*9,stroke:'#94A3B8','stroke-width':'2.5','stroke-linecap':'round'}));
-      edgesLayer.appendChild(svgTxt(mx, my-14, '벌거', '#94A3B8', '10', 'middle'));
-    } else if(type==='divorce') {
-      edgesLayer.appendChild(svgEl('line', {x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#94A3B8','stroke-width':'2.2','stroke-linecap':'round'}));
-      [-7,7].forEach(off => {
-        const bx=mx+dx/len*off, by=my+dy/len*off;
-        edgesLayer.appendChild(svgEl('line', {x1:bx-nx*9,y1:by-ny2*9,x2:bx+nx*9,y2:by+ny2*9,stroke:'#94A3B8','stroke-width':'2.5','stroke-linecap':'round'}));
-      });
-      edgesLayer.appendChild(svgTxt(mx, my-14, '이혼', '#94A3B8', '10', 'middle'));
-    } else if(type==='remarry') {
-      edgesLayer.appendChild(svgEl('line', {x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#334155','stroke-width':'2.2','stroke-linecap':'round'}));
-      [-14,14].forEach(off => {
-        const bx=mx+dx/len*off, by=my+dy/len*off;
-        edgesLayer.appendChild(svgEl('line', {x1:bx-nx*9,y1:by-ny2*9,x2:bx+nx*9,y2:by+ny2*9,stroke:'#94A3B8','stroke-width':'2','stroke-linecap':'round'}));
-      });
-      const bx2=mx+dx/len*26, by2=my+dy/len*26;
-      edgesLayer.appendChild(svgEl('line', {x1:bx2-nx*9,y1:by2-ny2*9,x2:bx2+nx*9,y2:by2+ny2*9,stroke:'#334155','stroke-width':'2.5','stroke-linecap':'round'}));
-      edgesLayer.appendChild(svgTxt(mx, my-14, '재결합', '#334155', '10', 'middle'));
-    } else {
-      edgesLayer.appendChild(svgEl('line', {x1:a.x,y1:a.y,x2:b.x,y2:b.y,stroke:'#334155','stroke-width':'1.5','stroke-linecap':'round'}));
-    }
+    const [x1,y1]=P(a), [x2,y2]=P(b);
+    if(l.k==='child') svg += `<path d="M${x1} ${y1} V${(y1+y2)/2} H${x2} V${y2}" fill="none" stroke="#4C7A6D" stroke-width="1.1"/>`;
+    else svg += `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#4C7A6D" stroke-width="1.1"/>`;
   });
+  t.n.forEach(p=>{
+    const [x,y]=P(p), c=p.c||'#4C7A6D', sw=p.ip?2:1.3;
+    if(p.g==='female') svg += `<circle cx="${x}" cy="${y}" r="4" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
+    else if(p.g==='unknown') svg += `<path d="M${x} ${y-4.5} L${x+4.5} ${y} L${x} ${y+4.5} L${x-4.5} ${y} Z" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
+    else svg += `<rect x="${x-4}" y="${y-4}" width="8" height="8" fill="none" stroke="${c}" stroke-width="${sw}"/>`;
+    if(p.ip) svg += `<rect x="${x-6.2}" y="${y-6.2}" width="12.4" height="12.4" fill="none" stroke="${c}" stroke-width="0.7"/>`;
+  });
+  return svg + `</svg>`;
 }
 
-/* 지그재그 (갈등선) */
-function drawZigzag(x1,y1,x2,y2,color,sw) {
-  const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1;
-  const ux=dx/len, uy=dy/len, nx=uy, ny=-ux;
-  const amp=7, step=14;
-  const steps = Math.max(2, Math.floor(len/step));
-  let pts = [];
-  for(let i=0;i<=steps;i++) {
-    const t=i/steps;
-    const cx=x1+t*dx, cy=y1+t*dy;
-    const side=(i%2===0)?1:-1;
-    pts.push(`${cx+nx*amp*side},${cy+ny*amp*side}`);
+function goTab(t){
+  S.tab = t;
+  ['tabCases','tabAdmin','tabMe'].forEach(v=>$(v).classList.add('hide'));
+  $('tab'+t[0].toUpperCase()+t.slice(1)).classList.remove('hide');
+  [['cases','tabBtnCases','sideCases'],['admin','tabBtnAdmin','sideAdmin'],['me','tabBtnMe','sideMe']]
+    .forEach(([k,b,s])=>{ $(b).classList.toggle('on', k===t); $(s).classList.toggle('on', k===t); });
+  updateNewBtn();
+  $('mainScroll').scrollTop = 0;
+}
+
+/* ═══ 케이스 생성·설정 (경로: cases/{orgId}/{caseId}) ═══ */
+function casePath(id){ return 'cases/'+S.me.orgId+'/'+id; }
+function genoPath(){ return 'genograms/'+S.me.orgId+'/'+S.caseId; }
+
+function newCase(){
+  openSheet(`
+    <h3>새 케이스</h3>
+    <div class="sub">내담자 가족의 가계도를 새로 시작합니다.</div>
+    <div class="fld"><label>케이스 이름</label>
+      <input id="ncTitle" class="inp" placeholder="예) 김○수 가족"></div>
+    <div class="fld"><label>사례번호 (선택)</label>
+      <input id="ncNo" class="inp" placeholder="예) 2026-118"></div>
+    <div class="fld"><label>공개범위</label>
+      <div class="seg" id="ncVis">
+        <button class="on" data-v="private">🔒 비공개</button>
+        <button data-v="org">👥 기관 공유</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.55;">
+        비공개는 나와 기관 관리자만 볼 수 있습니다. 나중에 언제든 바꿀 수 있습니다.
+      </div>
+    </div>
+    <button class="btn" onclick="createCase()">케이스 만들기</button>
+  `);
+  segBind('ncVis');
+  setTimeout(()=>$('ncTitle').focus(),300);
+}
+function segBind(id){
+  const seg = $(id);
+  seg.querySelectorAll('button').forEach(b=>{
+    b.onclick = () => { seg.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on'); };
+  });
+}
+function segVal(id){ const b=$(id).querySelector('button.on'); return b ? b.dataset.v : null; }
+
+async function createCase(){
+  const title = $('ncTitle').value.trim();
+  if(!title){ toast('케이스 이름을 입력해 주세요.'); return; }
+  const id = db.ref('cases/'+S.me.orgId).push().key;
+  try{
+    await db.ref(casePath(id)).set({
+      ownerUid:S.uid, ownerName:S.me.name,
+      title, caseNo:$('ncNo').value.trim()||'',
+      visibility: segVal('ncVis'),
+      count:0, gen:1, createdAt:Date.now(), updatedAt:Date.now()
+    });
+  }catch(e){ toast('케이스 생성에 실패했습니다.'); return; }
+  closeSheet();
+  toast('케이스를 만들었습니다.');
+  setTimeout(()=>openCanvas(id), 250);
+}
+
+function openCaseSettings(){
+  const c = S.cases[S.caseId]; if(!c) return;
+  const canEdit = c.ownerUid===S.uid || S.me.role==='admin';
+  openSheet(`
+    <h3>케이스 설정</h3>
+    <div class="sub">${esc(c.title)}</div>
+    <div class="fld"><label>케이스 이름</label>
+      <input id="csTitle" class="inp" value="${esc(c.title||'')}" ${canEdit?'':'disabled'}></div>
+    <div class="fld"><label>사례번호</label>
+      <input id="csNo" class="inp" value="${esc(c.caseNo||'')}" ${canEdit?'':'disabled'}></div>
+    <div class="fld"><label>공개범위</label>
+      <div class="seg" id="csVis">
+        <button data-v="private" class="${c.visibility!=='org'?'on':''}">🔒 비공개</button>
+        <button data-v="org" class="${c.visibility==='org'?'on':''}">👥 기관 공유</button>
+      </div>
+      <div style="font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.55;">
+        담당자: ${esc(c.ownerName||'—')}${canEdit?'':' · 변경 권한이 없습니다.'}
+      </div>
+    </div>
+    ${canEdit ? `
+      <div class="sheet-acts">
+        <button class="btn ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="deleteCase()">삭제</button>
+        <button class="btn" onclick="saveCaseSettings()">저장하기</button>
+      </div>` : ''}
+  `);
+  if(canEdit) segBind('csVis');
+}
+async function saveCaseSettings(){
+  const t = $('csTitle').value.trim();
+  if(!t){ toast('케이스 이름을 입력해 주세요.'); return; }
+  try{
+    await db.ref(casePath(S.caseId)).update({
+      title:t, caseNo:$('csNo').value.trim(), visibility:segVal('csVis'), updatedAt:Date.now()
+    });
+  }catch(e){ toast('저장에 실패했습니다.'); return; }
+  $('cvTitle').textContent = t;
+  $('cvSub').textContent = `${segVal('csVis')==='org'?'기관 공유':'비공개'} · 자동저장`;
+  closeSheet(); toast('저장했습니다.');
+}
+async function deleteCase(){
+  if(!confirm('이 케이스를 삭제할까요? 가계도 기록도 함께 사라집니다.')) return;
+  try{ await db.ref(casePath(S.caseId)).update({ deleted:true, updatedAt:Date.now() }); }
+  catch(e){ toast('삭제에 실패했습니다.'); return; }
+  closeSheet(); closeCanvas(); toast('삭제했습니다.');
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   캔버스 — Konva
+   ═══════════════════════════════════════════════════════════════ */
+const NW = 56;
+
+async function openCanvas(id){
+  S.caseId = id; S.sel=null; S.linkFrom=null;
+  const c = S.cases[id]; if(!c) return;
+  $('cvTitle').textContent = c.title;
+  $('cvSub').textContent = `${c.visibility==='org'?'기관 공유':'비공개'} · 자동저장`;
+  show('viewCanvas');
+
+  let snap;
+  try{ snap = await db.ref(genoPath()).once('value'); }
+  catch(e){ toast('가계도를 불러올 권한이 없거나 실패했습니다.'); closeCanvas(); return; }
+  S.geno = snap.val() || { nodes:{}, links:{} };
+  S.geno.nodes = S.geno.nodes || {};
+  S.geno.links = S.geno.links || {};
+
+  buildStage();
+  setTool('male');            // 수정 #4: 스테이지 생성 후 도구 설정
+  draw();
+  fitView();
+  if(!Object.keys(S.geno.nodes).length) hint('빈 캔버스를 탭하면 인물이 추가됩니다.');
+}
+function closeCanvas(){
+  if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; }
+  S.caseId=null;
+  if(S.me) show('app');
+}
+
+function buildStage(){
+  if(S.stage) S.stage.destroy();
+  const wrap = $('stageWrap');
+  S.stage = new Konva.Stage({
+    container:'stage', width:wrap.clientWidth, height:wrap.clientHeight, draggable:false
+  });
+  S.layer = new Konva.Layer();
+  S.stage.add(S.layer);
+
+  S.stage.on('wheel', e=>{
+    e.evt.preventDefault();
+    const old = S.stage.scaleX(), p = S.stage.getPointerPosition();
+    const to = { x:(p.x - S.stage.x())/old, y:(p.y - S.stage.y())/old };
+    const ns = Math.max(.25, Math.min(3, e.evt.deltaY>0 ? old/1.08 : old*1.08));
+    S.stage.scale({x:ns,y:ns});
+    S.stage.position({ x:p.x - to.x*ns, y:p.y - to.y*ns });
+  });
+  let lastDist=0;
+  S.stage.on('touchmove', e=>{
+    const [t1,t2] = [e.evt.touches[0], e.evt.touches[1]];
+    if(!t1 || !t2) return;
+    e.evt.preventDefault();
+    S.stage.draggable(false);
+    const p1={x:t1.clientX,y:t1.clientY}, p2={x:t2.clientX,y:t2.clientY};
+    const dist = Math.hypot(p2.x-p1.x, p2.y-p1.y);
+    const center = {x:(p1.x+p2.x)/2, y:(p1.y+p2.y)/2};
+    if(!lastDist){ lastDist=dist; return; }
+    const box = S.stage.container().getBoundingClientRect();
+    const cs = { x:center.x-box.left, y:center.y-box.top };
+    const old = S.stage.scaleX();
+    const to = { x:(cs.x - S.stage.x())/old, y:(cs.y - S.stage.y())/old };
+    const ns = Math.max(.25, Math.min(3, old * (dist/lastDist)));
+    S.stage.scale({x:ns,y:ns});
+    S.stage.position({ x:cs.x - to.x*ns, y:cs.y - to.y*ns });
+    lastDist=dist;
+  });
+  S.stage.on('touchend', ()=>{ lastDist=0; S.stage.draggable(S.tool==='pan'); });
+
+  S.stage.on('click tap', e=>{
+    if(e.target !== S.stage) return;
+    if(!['male','female','unknown'].includes(S.tool)){
+      S.sel=null; S.linkFrom=null; draw(); return;
+    }
+    const p = S.stage.getPointerPosition(), s = S.stage.scaleX();
+    addNode(S.tool, (p.x-S.stage.x())/s, (p.y-S.stage.y())/s);
+  });
+}
+function resizeStage(){
+  if(!S.stage) return;
+  const wrap = $('stageWrap');
+  S.stage.width(wrap.clientWidth); S.stage.height(wrap.clientHeight);
+}
+
+function setTool(t){
+  S.tool = t; S.linkFrom = null;
+  ['male','female','unknown','link','pan'].forEach(k=>{
+    const el = $('tl'+k[0].toUpperCase()+k.slice(1));
+    if(el) el.classList.toggle('on', k===t);
+  });
+  if(S.stage) S.stage.draggable(t==='pan');
+  if(t==='link') hint('연결할 인물 두 명을 차례로 탭하세요.');
+  else if(t==='pan') hint('드래그해서 화면을 이동합니다.');
+  else hintOff();
+  draw();
+}
+let hintTimer;
+function hint(m){ const h=$('cvHint'); h.textContent=m; h.classList.remove('hide'); clearTimeout(hintTimer); hintTimer=setTimeout(hintOff,3200); }
+function hintOff(){ $('cvHint').classList.add('hide'); }
+
+/* ── 노드 CRUD (수정 #7: 노드/링크 단위 저장) ── */
+function errSave(){ toast('저장에 실패했습니다. 연결을 확인해 주세요.'); }
+function saveNode(n){ db.ref(genoPath()+'/nodes/'+n.id).set(n).catch(errSave); metaSave(); }
+function saveNodePos(n){ db.ref(genoPath()+'/nodes/'+n.id).update({x:n.x, y:n.y}).catch(errSave); metaSave(); }
+
+function addNode(gender, x, y){
+  const id = uid();
+  const n = { id, gender, x:Math.round(x), y:Math.round(y), name:'', birth:'', alive:true, status:{}, ip:false, memo:'' };
+  S.geno.nodes[id] = n;
+  saveNode(n); draw();
+  openPerson(id);
+}
+function nodeColor(n){
+  const on = Object.keys(n.status||{}).filter(k=>n.status[k]);
+  return on.length ? STATUS[on[0]].color : '#22332E';
+}
+
+/* ── 렌더 ── */
+function draw(){
+  if(!S.layer) return;
+  S.layer.destroyChildren();
+  Object.values(S.geno.links).forEach(l=>{
+    const a = S.geno.nodes[l.a], b = S.geno.nodes[l.b];
+    if(a && b) drawLink(l, a, b);
+  });
+  Object.values(S.geno.nodes).forEach(drawNode);
+  S.layer.draw();
+}
+
+function drawLink(l, a, b){
+  const def = RELS[l.type] || RELS.marriage;
+  const col = '#22332E';
+
+  if(def.kind==='child'){
+    /* 수정 #12: 부모가 위든 아래든 방향 자동 판별 */
+    const dir = b.y >= a.y ? 1 : -1;
+    const my = (a.y + b.y)/2;
+    S.layer.add(new Konva.Line({
+      points:[a.x, a.y + dir*NW/2, a.x, my, b.x, my, b.x, b.y - dir*NW/2],
+      stroke:col, strokeWidth:2,
+      dash: l.type==='adopted' ? [6,4] : undefined,
+      listening:false
+    }));
+    return;
   }
-  edgesLayer.appendChild(svgEl('polyline', {points:pts.join(' '),fill:'none',stroke:color,'stroke-width':sw,'stroke-linecap':'round','stroke-linejoin':'round'}));
+
+  if(def.kind==='emo'){
+    const c = { close:'#4C7A6D', conflict:'#C15B47', cutoff:'#7A8B85' }[l.type];
+    if(l.type==='conflict'){
+      const steps=8, pts=[];
+      for(let i=0;i<=steps;i++){
+        const t=i/steps, x=a.x+(b.x-a.x)*t, y=a.y+(b.y-a.y)*t;
+        const nx=-(b.y-a.y), ny=(b.x-a.x), len=Math.hypot(nx,ny)||1;
+        const off = (i%2? 6:-6) * (i&&i<steps?1:0);
+        pts.push(x + nx/len*off, y + ny/len*off);
+      }
+      S.layer.add(new Konva.Line({ points:pts, stroke:c, strokeWidth:2, listening:false }));
+    } else if(l.type==='close'){
+      [-2.5, 2.5].forEach(o=>{
+        const nx=-(b.y-a.y), ny=(b.x-a.x), len=Math.hypot(nx,ny)||1;
+        S.layer.add(new Konva.Line({
+          points:[a.x+nx/len*o, a.y+ny/len*o, b.x+nx/len*o, b.y+ny/len*o],
+          stroke:c, strokeWidth:2, listening:false }));
+      });
+    } else {
+      S.layer.add(new Konva.Line({ points:[a.x,a.y,b.x,b.y], stroke:c, strokeWidth:2, dash:[10,7], listening:false }));
+      const mx=(a.x+b.x)/2, my2=(a.y+b.y)/2;
+      S.layer.add(new Konva.Line({ points:[mx-7,my2-7,mx+7,my2+7], stroke:c, strokeWidth:2, listening:false }));
+      S.layer.add(new Konva.Line({ points:[mx+7,my2-7,mx-7,my2+7], stroke:c, strokeWidth:2, listening:false }));
+    }
+    return;
+  }
+
+  S.layer.add(new Konva.Line({
+    points:[a.x, a.y, b.x, b.y], stroke:col, strokeWidth:2,
+    dash: l.type==='cohabit' ? [7,5] : undefined, listening:false
+  }));
+  const slashes = { separated:1, divorced:2 }[l.type] || 0;
+  if(slashes){
+    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
+    for(let i=0;i<slashes;i++){
+      const o = slashes===1 ? 0 : (i? 6 : -6);
+      S.layer.add(new Konva.Line({
+        points:[mx+o-6, my+9, mx+o+6, my-9], stroke:col, strokeWidth:2, listening:false }));
+    }
+  }
 }
 
-/* ── 동거 그룹 렌더링 ── */
-function renderGroups() {
-  groupsLayer.innerHTML = '';
-  groups.forEach(gr => {
-    const members = gr.members.map(id => nodes.find(n=>n.id===id)).filter(Boolean);
-    if(!members.length) return;
-    const pad = 44;
-    const xs = members.map(m=>m.x), ys = members.map(m=>m.y);
-    const minX=Math.min(...xs)-pad, maxX=Math.max(...xs)+pad;
-    const minY=Math.min(...ys)-pad, maxY=Math.max(...ys)+pad;
-    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
-    const rx=Math.max((maxX-minX)/2, 30), ry=Math.max((maxY-minY)/2, 30);
-    const el = svgEl('ellipse',{cx,cy,rx,ry,fill:'rgba(99,102,241,0.04)',stroke:'#64748B','stroke-width':'2','stroke-dasharray':'6,4'});
-    groupsLayer.appendChild(el);
-    if(gr.label) {
-      const t = svgTxt(cx, minY-8, gr.label, '#64748B', '12', 'middle');
-      t.setAttribute('font-weight','600'); groupsLayer.appendChild(t);
-    }
-    // 삭제 버튼 (×)
-    const gDel = svgEl('g',{cursor:'pointer'});
-    gDel.appendChild(svgEl('circle',{cx:cx+rx-2,cy:minY+2,r:'10',fill:'#fff',stroke:'#CBD5E1','stroke-width':'1'}));
-    const xt = svgTxt(cx+rx-2, minY+6, '×', '#94A3B8', '14', 'middle');
-    gDel.appendChild(xt);
-    gDel.addEventListener('click', ev => { ev.stopPropagation(); saveHist(); groups=groups.filter(g=>g.id!==gr.id); render(); saveGeno(); });
-    groupsLayer.appendChild(gDel);
-  });
-  // 그룹 모드 중 선택된 멤버 하이라이트
-  if(groupMode && groupMembers.length) {
-    groupMembers.forEach(id => {
-      const n = nodes.find(n=>n.id===id);
-      if(!n) return;
-      const h = makeShape(n.sex, n.x, n.y, R+8, 'rgba(99,102,241,0.15)', '#6366F1', '2');
-      groupsLayer.appendChild(h);
+function drawNode(n){
+  const g = new Konva.Group({ x:n.x, y:n.y, draggable:true });
+  const col = nodeColor(n);
+  const isSel = S.sel===n.id, isFrom = S.linkFrom===n.id;
+  const sw = 2.4;
+  const R = NW/2;
+
+  let shape;
+  if(n.gender==='female'){
+    shape = new Konva.Circle({ radius:R, fill:'#fff', stroke:col, strokeWidth:sw });
+    if(n.ip) g.add(new Konva.Circle({ radius:R+5, stroke:col, strokeWidth:1.2, listening:false }));
+  } else if(n.gender==='unknown'){
+    shape = new Konva.Line({ points:[0,-R, R,0, 0,R, -R,0], closed:true, fill:'#fff', stroke:col, strokeWidth:sw });
+    if(n.ip) g.add(new Konva.Line({ points:[0,-R-5, R+5,0, 0,R+5, -R-5,0], closed:true, stroke:col, strokeWidth:1.2, listening:false }));
+  } else {
+    shape = new Konva.Rect({ x:-R, y:-R, width:NW, height:NW, fill:'#fff', stroke:col, strokeWidth:sw });
+    if(n.ip) g.add(new Konva.Rect({ x:-R-5, y:-R-5, width:NW+10, height:NW+10, stroke:col, strokeWidth:1.2, listening:false }));
+  }
+  g.add(shape);
+
+  const on = Object.keys(n.status||{}).filter(k=>n.status[k]);
+  if(on.length){
+    on.forEach((k,i)=>{
+      const h = R / Math.max(on.length,1);
+      g.add(new Konva.Rect({
+        x:-R+3, y: i*h, width:NW-6, height:h,
+        fill:STATUS[k].color, opacity:.3, listening:false
+      }));
     });
   }
-}
-
-/* ── 동거 그룹 모드 ── */
-function startCohabGroup() {
-  if(groupMode) { cancelCohabGroup(); return; }
-  groupMode = true; groupMembers = [];
-  cancelRel();
-  document.getElementById('rb-cohabgroup').classList.add('active');
-  document.getElementById('rel-toast-text').textContent = '동거 그룹에 포함할 구성원을 클릭하세요';
-  document.getElementById('rel-toast-btn').style.display = 'none';
-  document.getElementById('rel-toast-btn').onclick = commitCohabGroup;
-  document.getElementById('rel-toast').classList.add('show');
-  document.getElementById('cancel-rel').style.display = 'block';
-  document.getElementById('cancel-rel').onclick = cancelCohabGroup;
-  closeEdit();
-}
-function cancelCohabGroup() {
-  groupMode = false; groupMembers = [];
-  document.getElementById('rb-cohabgroup').classList.remove('active');
-  document.getElementById('rel-toast').classList.remove('show');
-  document.getElementById('cancel-rel').style.display = 'none';
-  document.getElementById('cancel-rel').onclick = cancelRel;
-  document.getElementById('rel-toast-btn').onclick = commitFamily;
-  render();
-}
-function commitCohabGroup() {
-  if(!groupMembers.length) { cancelCohabGroup(); return; }
-  saveHist();
-  const label = prompt('그룹 라벨을 입력하세요 (생략 가능)', '동거') ?? '동거';
-  groups.push({ id: groupId++, members: [...groupMembers], label });
-  cancelCohabGroup(); render(); saveGeno();
-}
-
-/* ── JPG 내보내기 ── */
-function exportJPG() {
-  const c = cases[currentId];
-  // 현재 뷰포트 transform 제거 후 전체 콘텐츠 기준으로 bbox 계산
-  [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform',''));
-
-  // 콘텐츠 범위 계산
-  const allX = nodes.map(n => n.x);
-  const allY = nodes.map(n => n.y);
-  if(!allX.length) {
-    [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform', `translate(${vpX},${vpY}) scale(${vpScale})`));
-    alert('가계도에 구성원이 없습니다.'); return;
+  if(n.alive===false){
+    g.add(new Konva.Line({ points:[-R,-R, R,R], stroke:'#22332E', strokeWidth:2, listening:false }));
+    g.add(new Konva.Line({ points:[R,-R, -R,R], stroke:'#22332E', strokeWidth:2, listening:false }));
   }
-  const pad = 60;
-  const minX = Math.min(...allX) - pad - R;
-  const minY = Math.min(...allY) - pad - R;
-  const maxX = Math.max(...allX) + pad + R + 60;
-  const maxY = Math.max(...allY) + pad + R + 40;
-  const w = maxX - minX;
-  const h = maxY - minY;
+  if(isSel || isFrom){
+    g.add(new Konva.Rect({
+      x:-R-9, y:-R-9, width:NW+18, height:NW+18, cornerRadius:8,
+      stroke: isFrom ? '#C15B47' : '#6FA292', strokeWidth:2, dash:[5,4], listening:false }));
+  }
 
-  // SVG를 해당 범위로 직렬화
-  const origVB = canvas.getAttribute('viewBox');
-  canvas.setAttribute('viewBox', `${minX} ${minY} ${w} ${h}`);
-  canvas.setAttribute('width', w);
-  canvas.setAttribute('height', h);
+  /* 수정 #9: 만나이 근사 (연도차, +1 제거) */
+  const age = n.birth ? (new Date().getFullYear() - parseInt(n.birth)) : null;
+  const label = [n.name || '이름 없음', (age!==null && !isNaN(age) && n.alive!==false) ? age : (n.alive===false?'†':'')].filter(x=>x!=='').join(' ');
+  g.add(new Konva.Text({
+    x:-60, y:R+7, width:120, align:'center',
+    text:label, fontSize:12, fontFamily:'Pretendard', fill:'#5B6E67', listening:false
+  }));
+  if(n.ip) g.add(new Konva.Text({
+    x:-60, y:R+22, width:120, align:'center',
+    text:'중심인물', fontSize:10, fontStyle:'700', fontFamily:'Pretendard', fill:'#4C7A6D', listening:false }));
 
-  const svgStr = new XMLSerializer().serializeToString(canvas);
+  g.on('dragmove', ()=>{
+    n.x = Math.round(g.x()); n.y = Math.round(g.y());
+    S.layer.destroyChildren();
+    Object.values(S.geno.links).forEach(l=>{
+      const a=S.geno.nodes[l.a], b=S.geno.nodes[l.b]; if(a&&b) drawLink(l,a,b);
+    });
+    Object.values(S.geno.nodes).forEach(drawNode);
+    S.layer.draw();
+  });
+  g.on('dragend', ()=> saveNodePos(n));   // 수정 #7: 좌표만 부분 저장
+  g.on('click tap', e=>{
+    e.cancelBubble = true;
+    if(S.tool==='link'){
+      if(!S.linkFrom){ S.linkFrom = n.id; hint('두 번째 인물을 탭하세요.'); draw(); }
+      else if(S.linkFrom === n.id){ S.linkFrom = null; draw(); }
+      else { openRelPicker(S.linkFrom, n.id); }
+      return;
+    }
+    S.sel = n.id; draw(); openPerson(n.id);
+  });
 
-  // viewBox 원복
-  if(origVB) canvas.setAttribute('viewBox', origVB);
-  else canvas.removeAttribute('viewBox');
-  canvas.removeAttribute('width');
-  canvas.removeAttribute('height');
-  [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform', `translate(${vpX},${vpY}) scale(${vpScale})`));
+  S.layer.add(g);
+}
 
-  // Canvas에 렌더링
-  const img = new Image();
-  const svgBlob = new Blob([svgStr], {type:'image/svg+xml;charset=utf-8'});
-  const url = URL.createObjectURL(svgBlob);
-  img.onload = () => {
-    const cvs = document.createElement('canvas');
-    const scale = 2; // 고해상도
-    cvs.width = w * scale;
-    cvs.height = h * scale;
-    const ctx = cvs.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, cvs.width, cvs.height);
-    ctx.drawImage(img, 0, 0, cvs.width, cvs.height);
-    URL.revokeObjectURL(url);
-    const a = document.createElement('a');
-    a.download = `가계도_${c?.name||'unknown'}_${new Date().toISOString().slice(0,10)}.jpg`;
-    a.href = cvs.toDataURL('image/jpeg', 0.95);
-    a.click();
+function zoomBy(f){
+  if(!S.stage) return;
+  const s = Math.max(.25, Math.min(3, S.stage.scaleX()*f));
+  const c = { x:S.stage.width()/2, y:S.stage.height()/2 };
+  const to = { x:(c.x-S.stage.x())/S.stage.scaleX(), y:(c.y-S.stage.y())/S.stage.scaleY() };
+  S.stage.scale({x:s,y:s});
+  S.stage.position({ x:c.x-to.x*s, y:c.y-to.y*s });
+}
+function fitView(){
+  if(!S.stage) return;
+  const ns = Object.values(S.geno.nodes);
+  if(!ns.length){ S.stage.scale({x:1,y:1}); S.stage.position({x:S.stage.width()/2, y:S.stage.height()/2}); return; }
+  const pad = 70;
+  const minX=Math.min(...ns.map(n=>n.x))-pad, maxX=Math.max(...ns.map(n=>n.x))+pad;
+  const minY=Math.min(...ns.map(n=>n.y))-pad, maxY=Math.max(...ns.map(n=>n.y))+pad;
+  const s = Math.min(S.stage.width()/(maxX-minX), S.stage.height()/(maxY-minY), 1.6);
+  S.stage.scale({x:s,y:s});
+  S.stage.position({
+    x:(S.stage.width() - (maxX-minX)*s)/2 - minX*s,
+    y:(S.stage.height()- (maxY-minY)*s)/2 - minY*s
+  });
+}
+
+/* ═══ 시트: 인물 / 관계선 ═══ */
+function openSheet(html){
+  $('sheetBody').innerHTML = html;
+  $('dim').classList.add('on'); $('sheet').classList.add('on');
+}
+function closeSheet(){
+  $('dim').classList.remove('on'); $('sheet').classList.remove('on');
+}
+
+function openPerson(id){
+  const n = S.geno.nodes[id]; if(!n) return;
+  openSheet(`
+    <h3>인물 편집</h3>
+    <div class="sub">가계도에서 탭한 인물의 정보를 입력합니다.</div>
+    <div class="fld"><label>이름</label>
+      <input id="pName" class="inp" value="${esc(n.name||'')}" placeholder="예) 김○수"></div>
+    <div class="fld"><label>성별</label>
+      <div class="seg" id="pGender">
+        <button data-v="male" class="${n.gender==='male'?'on':''}">■ 남성</button>
+        <button data-v="female" class="${n.gender==='female'?'on':''}">● 여성</button>
+        <button data-v="unknown" class="${n.gender==='unknown'?'on':''}">◆ 미상</button>
+      </div></div>
+    <div class="row2">
+      <div class="fld"><label>출생연도</label>
+        <input id="pBirth" class="inp" type="number" inputmode="numeric" value="${esc(n.birth||'')}" placeholder="1975"></div>
+      <div class="fld"><label>생존 여부</label>
+        <div class="seg" id="pAlive">
+          <button data-v="1" class="${n.alive!==false?'on':''}">생존</button>
+          <button data-v="0" class="${n.alive===false?'on':''}">사망</button>
+        </div></div>
+    </div>
+    <div class="fld"><label>상태 코딩 (복수 선택)</label>
+      <div class="tagrid" id="pStatus">
+        ${Object.entries(STATUS).map(([k,v])=>`
+          <button class="stag ${n.status?.[k]?'on':''}" data-k="${k}"
+            style="${n.status?.[k]?`color:${v.color};background:${v.color}18;`:''}">
+            <i style="background:${v.color}"></i>${v.label}
+          </button>`).join('')}
+      </div></div>
+    <div class="fld"><label>중심인물 (IP)</label>
+      <div class="seg" id="pIp">
+        <button data-v="0" class="${!n.ip?'on':''}">아니오</button>
+        <button data-v="1" class="${n.ip?'on':''}">중심인물로 표시</button>
+      </div></div>
+    <div class="fld"><label>사례 메모</label>
+      <textarea id="pMemo" class="inp" placeholder="가족 내 역할·관찰 내용">${esc(n.memo||'')}</textarea></div>
+    <div class="sheet-acts">
+      <button class="btn ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="delNode('${id}')">삭제</button>
+      <button class="btn" onclick="savePerson('${id}')">저장하기</button>
+    </div>
+  `);
+  ['pGender','pAlive','pIp'].forEach(segBind);
+  $('pStatus').querySelectorAll('.stag').forEach(b=>{
+    b.onclick = () => {
+      const k=b.dataset.k, c=STATUS[k].color, on=b.classList.toggle('on');
+      b.style.cssText = on ? `color:${c};background:${c}18;border-color:${c};` : '';
+    };
+  });
+}
+function savePerson(id){
+  const n = S.geno.nodes[id]; if(!n) return;
+  n.name  = $('pName').value.trim();
+  n.gender= segVal('pGender');
+  n.birth = $('pBirth').value.trim();
+  n.alive = segVal('pAlive')==='1';
+  n.ip    = segVal('pIp')==='1';
+  n.memo  = $('pMemo').value.trim();
+  const st = {};
+  $('pStatus').querySelectorAll('.stag.on').forEach(b=> st[b.dataset.k]=true);
+  n.status = st;
+
+  /* 수정 #7: 이 인물 + IP 해제된 인물만 부분 저장 */
+  const upd = { ['nodes/'+id]: n };
+  if(n.ip) Object.values(S.geno.nodes).forEach(o=>{
+    if(o.id!==id && o.ip){ o.ip=false; upd['nodes/'+o.id+'/ip']=false; }
+  });
+  db.ref(genoPath()).update(upd).catch(errSave);
+  metaSave();
+  draw(); closeSheet(); toast('저장했습니다.');
+}
+function delNode(id){
+  if(!confirm('이 인물과 연결된 관계선을 모두 지울까요?')) return;
+  const upd = { ['nodes/'+id]: null };
+  delete S.geno.nodes[id];
+  Object.entries(S.geno.links).forEach(([lid,l])=>{
+    if(l.a===id || l.b===id){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
+  });
+  db.ref(genoPath()).update(upd).catch(errSave);
+  metaSave();
+  S.sel=null; draw(); closeSheet(); toast('삭제했습니다.');
+}
+
+function openRelPicker(aId, bId){
+  const a=S.geno.nodes[aId], b=S.geno.nodes[bId];
+  const sym = {
+    marriage:  `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/></svg>`,
+    cohabit:   `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2" stroke-dasharray="6 4"/></svg>`,
+    separated: `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/><line x1="22" y1="3" x2="22" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 22 10)"/></svg>`,
+    divorced:  `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/><line x1="18" y1="3" x2="18" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 18 10)"/><line x1="26" y1="3" x2="26" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 26 10)"/></svg>`,
+    child:     `<svg width="44" height="20"><path d="M8 2 v8 h28 v8" fill="none" stroke="#22332E" stroke-width="2"/></svg>`,
+    adopted:   `<svg width="44" height="20"><path d="M8 2 v8 h28 v8" fill="none" stroke="#22332E" stroke-width="2" stroke-dasharray="5 3"/></svg>`,
+    close:     `<svg width="44" height="20"><line x1="2" y1="7" x2="42" y2="7" stroke="#4C7A6D" stroke-width="2"/><line x1="2" y1="13" x2="42" y2="13" stroke="#4C7A6D" stroke-width="2"/></svg>`,
+    conflict:  `<svg width="44" height="20"><path d="M2 10 l6-5 6 10 6-10 6 10 6-10 6 5" fill="none" stroke="#C15B47" stroke-width="2"/></svg>`,
+    cutoff:    `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#7A8B85" stroke-width="2" stroke-dasharray="8 6"/><line x1="17" y1="4" x2="27" y2="16" stroke="#7A8B85" stroke-width="2"/><line x1="27" y1="4" x2="17" y2="16" stroke="#7A8B85" stroke-width="2"/></svg>`
   };
-  img.src = url;
+  const group = (title, keys) => `
+    <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin:14px 0 8px;">${title}</div>
+    <div class="rel-list">
+      ${keys.map(k=>`
+        <button class="rel-item" onclick="addLink('${aId}','${bId}','${k}')">
+          <span class="rl-sym">${sym[k]}</span>
+          <span><b>${RELS[k].label}</b><small>${RELS[k].desc}</small></span>
+        </button>`).join('')}
+    </div>`;
+  openSheet(`
+    <h3>관계 설정</h3>
+    <div class="sub"><b>${esc(a.name||'이름 없음')}</b> → <b>${esc(b.name||'이름 없음')}</b> 사이의 관계를 고르세요.<br>
+      자녀·입양은 <b>앞사람이 부모</b>, 뒷사람이 자녀입니다.</div>
+    ${group('부부 · 커플', ['marriage','cohabit','separated','divorced'])}
+    ${group('자녀', ['child','adopted'])}
+    ${group('정서적 관계', ['close','conflict','cutoff'])}
+  `);
+}
+function addLink(a,b,type){
+  const kind = RELS[type].kind;
+  const upd = {};
+  Object.entries(S.geno.links).forEach(([lid,l])=>{
+    const same = (l.a===a&&l.b===b) || (l.a===b&&l.b===a);
+    if(same && RELS[l.type].kind===kind){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
+  });
+  const id = uid();
+  const link = { id, a, b, type };
+  S.geno.links[id] = link;
+  upd['links/'+id] = link;
+  db.ref(genoPath()).update(upd).catch(errSave);   // 수정 #7: 링크 단위 저장
+  metaSave();
+  S.linkFrom=null; draw(); closeSheet();
+  toast(`${RELS[type].label} 관계를 연결했습니다.`);
 }
 
-/* ── SVG 내보내기 ── */
-function exportSVG() {
-  const c = cases[currentId];
-  [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform',''));
-  const s = new XMLSerializer().serializeToString(canvas);
-  [nodesLayer, edgesLayer, groupsLayer, coupleLayer].forEach(l => l.setAttribute('transform', `translate(${vpX},${vpY}) scale(${vpScale})`));
-  const b = new Blob([s], {type:'image/svg+xml'});
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(b);
-  a.download = `가계도_${c?.name||'unknown'}_${new Date().toISOString().slice(0,10)}.svg`;
-  a.click();
+/* ── 메타(썸네일·요약) 저장 — 디바운스 ── */
+let metaT;
+function metaSave(){
+  clearTimeout(metaT);
+  metaT = setTimeout(async ()=>{
+    if(!S.caseId) return;
+    const nodes = Object.values(S.geno.nodes);
+    const thumb = {
+      n: nodes.slice(0,14).map(n=>({ i:n.id, x:n.x, y:n.y, g:n.gender, c:nodeColor(n), ip:!!n.ip })),
+      l: Object.values(S.geno.links).slice(0,18)
+           .map(l=>({ a:l.a, b:l.b, k:RELS[l.type]?.kind || 'couple' }))
+    };
+    const riskSummary = {};
+    nodes.forEach(n=> Object.keys(n.status||{}).forEach(k=>{
+      if(n.status[k]) riskSummary[k] = (riskSummary[k]||0)+1;
+    }));
+    const ys = [...new Set(nodes.map(n=>Math.round(n.y/100)))];
+    try{
+      await db.ref(casePath(S.caseId)).update({
+        updatedAt:Date.now(), count:nodes.length,
+        gen:Math.max(ys.length,1), thumb, riskSummary
+      });
+    }catch(e){ /* 메타 실패는 조용히 — 본문은 이미 저장됨 */ }
+  }, 700);
 }
 
-/* ── 초기화 ── */
-load();
-renderList();
+/* ── PNG 내보내기 (수정 #10: 흰 배경) ── */
+function exportPNG(){
+  if(!S.stage || !Object.keys(S.geno.nodes).length){ toast('그릴 인물이 없습니다.'); return; }
+  const sc = S.stage.scaleX(), pos = S.stage.position();
+  fitView();
+  setTimeout(()=>{
+    // 현재 보이는 영역 전체를 덮는 흰 배경을 깔고 캡처
+    const s = S.stage.scaleX();
+    const bg = new Konva.Rect({
+      x: -S.stage.x()/s, y: -S.stage.y()/s,
+      width: S.stage.width()/s, height: S.stage.height()/s,
+      fill:'#ffffff', listening:false
+    });
+    S.layer.add(bg); bg.moveToBottom(); S.layer.draw();
+    const url = S.stage.toDataURL({ pixelRatio:2, mimeType:'image/png' });
+    bg.destroy(); S.layer.draw();
 
-// 모바일: 처음에는 사이드바 보이기
-if(window.innerWidth <= 640) {
-  document.getElementById('sidebar').classList.remove('hidden');
+    const a = document.createElement('a');
+    a.download = `${((S.cases[S.caseId]||{}).title||'가계도').replace(/[\\/:*?"<>|]/g,'')}_가계도.png`;
+    a.href = url; a.click();
+    S.stage.scale({x:sc,y:sc}); S.stage.position(pos);
+    toast('PNG로 저장했습니다.');
+  }, 120);
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   기관 관리 (관리자) — orgMembers 미러 사용
+   ═══════════════════════════════════════════════════════════════ */
+function loadAdmin(){
+  db.ref('orgPrivate/'+S.me.orgId+'/joinCode').once('value')
+    .then(s=>{ S.joinCode = s.val() || '——————'; $('adminCode').textContent = S.joinCode; })
+    .catch(()=>{ $('adminCode').textContent = '——————'; });
+
+  if(membersRef) membersRef.off();          // 수정 #5
+  membersRef = db.ref('orgMembers/'+S.me.orgId);
+  membersRef.on('value', snap=>{
+    const users = snap.val() || {};
+    const wait=[], mem=[];
+    Object.entries(users).forEach(([u,rec])=>{
+      if(rec.approved) mem.push([u,rec]);
+      else if(!rec.rejected) wait.push([u,rec]);   // 거절된 계정은 목록에서 제외 (재신청 시 복귀)
+    });
+
+    $('waitCnt').textContent = wait.length ? `${wait.length}명` : '';
+    $('memCnt').textContent  = mem.length  ? `${mem.length}명`  : '';
+
+    $('waitList').innerHTML = wait.length ? wait.map(([u,r])=>`
+      <div class="usr">
+        <div class="avatar">${esc((r.name||'?').slice(0,1))}</div>
+        <div class="ub"><b>${esc(r.name)}</b><small>${esc(r.email)}</small></div>
+        <button class="btn sm" onclick="approve('${u}',true)">승인</button>
+        <button class="btn sm ghost" onclick="approve('${u}',false)">거절</button>
+      </div>`).join('')
+      : `<p style="font-size:13px;color:var(--muted);padding:6px 2px;">대기 중인 신청이 없습니다.</p>`;
+
+    $('memList').innerHTML = mem.map(([u,r])=>`
+      <div class="usr">
+        <div class="avatar">${esc((r.name||'?').slice(0,1))}</div>
+        <div class="ub"><b>${esc(r.name)}</b><small>${esc(r.email)}</small></div>
+        <span class="badge">${r.role==='admin'?'관리자':'직원'}</span>
+        ${u!==S.uid ? `<button class="btn sm ghost" onclick="toggleRole('${u}','${r.role}')">
+          ${r.role==='admin'?'직원으로':'관리자로'}</button>` : ''}
+      </div>`).join('');
+  }, err => toast('직원 목록을 불러오지 못했습니다.'));
+}
+
+/* 수정 #6: 거절 = 삭제가 아니라 rejected 마킹 (재가입 가능) */
+async function approve(u, ok){
+  const org = S.me.orgId;
+  try{
+    if(ok){
+      await db.ref().update({
+        ['users/'+u+'/approved']: true,  ['users/'+u+'/rejected']: null,
+        ['orgMembers/'+org+'/'+u+'/approved']: true, ['orgMembers/'+org+'/'+u+'/rejected']: null
+      });
+      toast('승인했습니다.');
+    }else{
+      if(!confirm('이 신청을 거절할까요? 신청자는 다시 신청할 수 있습니다.')) return;
+      await db.ref().update({
+        ['users/'+u+'/rejected']: true,
+        ['orgMembers/'+org+'/'+u+'/rejected']: true
+      });
+      toast('거절했습니다.');
+    }
+  }catch(e){ toast('처리에 실패했습니다.'); }
+}
+async function toggleRole(u, cur){
+  const next = cur==='admin' ? 'member' : 'admin';
+  if(!confirm(next==='admin' ? '이 직원에게 관리자 권한을 줄까요?' : '관리자 권한을 해제할까요?')) return;
+  try{
+    await db.ref().update({
+      ['users/'+u+'/role']: next,
+      ['orgMembers/'+S.me.orgId+'/'+u+'/role']: next
+    });
+    toast('권한을 바꿨습니다.');
+  }catch(e){ toast('처리에 실패했습니다.'); }
+}
+function renderAdminCases(all){
+  const list = Object.entries(all).sort((a,b)=>(b[1].updatedAt||0)-(a[1].updatedAt||0));
+  $('adminCases').innerHTML = list.length ? list.map(([id,c])=>`
+    <div class="usr">
+      <div class="ub"><b>${esc(c.title)}</b><small>담당 ${esc(c.ownerName||'—')} · ${c.count||0}명</small></div>
+      <span class="badge ${c.visibility==='org'?'':'wait'}">${c.visibility==='org'?'기관 공유':'비공개'}</span>
+      <button class="btn sm ghost" onclick="flipVis('${id}','${c.visibility}')">
+        ${c.visibility==='org'?'비공개로':'공유로'}</button>
+    </div>`).join('')
+    : `<p style="font-size:13px;color:var(--muted);padding:6px 2px;">등록된 케이스가 없습니다.</p>`;
+}
+async function flipVis(id, cur){
+  try{
+    await db.ref(casePath(id)).update({ visibility: cur==='org' ? 'private' : 'org' });
+    toast('공개범위를 바꿨습니다.');
+  }catch(e){ toast('처리에 실패했습니다.'); }
+}
+function copyCode(){
+  navigator.clipboard.writeText(S.joinCode||'')
+    .then(()=>toast('가입코드를 복사했습니다.'))
+    .catch(()=>toast('복사에 실패했습니다.'));
+}
+
+/* ── 전역 이벤트: 리사이즈 1회 등록 (수정 #11) · 복귀 재잠금 ── */
+window.addEventListener('resize', ()=>{ resizeStage(); updateNewBtn(); });
+let bgAt = null;
+document.addEventListener('visibilitychange', ()=>{
+  if(document.hidden) bgAt = Date.now();
+  else if(bgAt && Date.now()-bgAt > 5*60*1000 && S.me?.pinHash){
+    sessionStorage.removeItem(PIN_KEY);
+    closeSheet();
+    if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.caseId=null; }
+    startPin('verify');
+  }
+});
 </script>
 </body>
 </html>
