@@ -2000,8 +2000,17 @@ function renderAdminCases(all){
       <span class="badge ${c.visibility==='org'?'':'wait'}">${c.visibility==='org'?'기관 공유':'비공개'}</span>
       <button class="btn sm ghost" onclick="flipVis('${id}','${c.visibility}')">
         ${c.visibility==='org'?'비공개로':'공유로'}</button>
+      <button class="btn sm ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="adminDeleteCase('${id}')">삭제</button>
     </div>`).join('')
     : `<p style="font-size:13px;color:var(--muted);padding:6px 2px;">등록된 케이스가 없습니다.</p>`;
+}
+async function adminDeleteCase(id){
+  const c = (S.allCases||{})[id] || S.cases[id]; if(!c) return;
+  if(!confirm('"'+(c.title||'')+'" 케이스를 삭제할까요?\n가계도 기록도 함께 사라지며, 담당자 화면에서도 제거됩니다.')) return;
+  try{ await db.ref(casePath(id)).update({ deleted:true, updatedAt:Date.now() }); }
+  catch(e){ toast('삭제에 실패했습니다.'); return; }
+  if(S.caseId === id) closeCanvas();
+  toast('삭제했습니다.');
 }
 async function flipVis(id, cur){
   try{
@@ -2054,6 +2063,7 @@ const QG_KW = {
   '외할아버지':{role:'mgf',g:'male'}, '외조부':{role:'mgf',g:'male'},
   '외할머니':{role:'mgm',g:'female'}, '외조모':{role:'mgm',g:'female'}
 };
+const QG_REL = { '결혼':'marriage', '재혼':'marriage', '동거':'cohabit', '별거':'separated', '이혼':'divorced' };
 function parseQuickGen(text){
   const people=[], errors=[], singles={};
   const nowYear = new Date().getFullYear();
@@ -2067,6 +2077,8 @@ function parseQuickGen(text){
       else if(t==='여'||t==='여자') p.gender='female';
       else if(/^\d{4}(년생?)?$/.test(t)) p.birth = String(parseInt(t));
       else if(/^\d{1,3}(세|살)?$/.test(t)){ const n=parseInt(t); p.birth = n>=1900 ? String(n) : String(nowYear-n); }
+      else if(QG_REL[t]) p.rel = QG_REL[t];
+      else if(t==='사망'||t==='고인'||t==='작고') p.dead = true;
       else if(!p.name) p.name = t;
     });
     if(['self','father','mother','spouse','pgf','pgm','mgf','mgm'].includes(p.role)){
@@ -2083,13 +2095,15 @@ function openQuickGen(){
   openSheet(`
     <h3>글로 가계도 만들기</h3>
     <div class="sub">한 줄에 한 명씩 <b>관계 이름 출생연도(또는 나이) 성별</b> 순서로 적어주세요. 이름·연도·성별은 생략 가능합니다.<br>
-    사용 가능한 관계: 본인, 아버지, 어머니, 남편, 아내, 형, 오빠, 누나, 언니, 남동생, 여동생, 아들, 딸, 할아버지, 할머니, 외할아버지, 외할머니</div>
+    사용 가능한 관계: 본인, 아버지, 어머니, 남편, 아내, 형, 오빠, 누나, 언니, 남동생, 여동생, 아들, 딸, 할아버지, 할머니, 외할아버지, 외할머니<br>
+    부부 상태는 <b>결혼 · 동거 · 별거 · 이혼</b>을, 고인은 <b>사망</b>을 덧붙이면 도식에 반영됩니다.</div>
     <textarea id="qgText" rows="9" style="width:100%;border:1.5px solid var(--line);border-radius:12px;padding:11px;font:inherit;font-size:13.5px;background:#fff;resize:vertical;box-sizing:border-box;" placeholder="본인 김철수 1998 남
-아버지 김영수 58
+아버지 김영수 58 이혼
 어머니 박말순 55
 여동생 김철희 25
-아내 이영희 1999
-아들 김민준 3"></textarea>
+아내 이영희 1999 동거
+아들 김민준 3
+할아버지 82 사망"></textarea>
     <div id="qgErr" style="color:var(--danger);font-size:12px;margin:7px 0;"></div>
     <button class="btn" onclick="runQuickGen()">1차 가계도 생성</button>
   `);
@@ -2104,12 +2118,15 @@ function runQuickGen(){
   const put = (p,x,y)=>{
     if(!p) return null;
     const n = { id:uid(), gender:p.gender, x:Math.round(x), y:Math.round(y),
-                name:p.name, birth:p.birth, alive:true, status:{}, ip:p.role==='self', memo:'' };
+                name:p.name, birth:p.birth, alive:!p.dead, status:{}, ip:p.role==='self', memo:'' };
     S.geno.nodes[n.id] = n; return n;
   };
-  const pgf=put(one('pgf'),-170,ROW.grand), pgm=put(one('pgm'),-50,ROW.grand);
-  const mgf=put(one('mgf'),  50,ROW.grand), mgm=put(one('mgm'),170,ROW.grand);
-  const fa =put(one('father'),-110,ROW.parent), mo=put(one('mother'),110,ROW.parent);
+  const pPgf=one('pgf'), pPgm=one('pgm'), pMgf=one('mgf'), pMgm=one('mgm');
+  const pFa=one('father'), pMo=one('mother'), pSelf=one('self');
+  const rel2 = (x,y)=> (x&&x.rel) || (y&&y.rel) || 'marriage';
+  const pgf=put(pPgf,-170,ROW.grand), pgm=put(pPgm,-50,ROW.grand);
+  const mgf=put(pMgf,  50,ROW.grand), mgm=put(pMgm,170,ROW.grand);
+  const fa =put(pFa,-110,ROW.parent), mo=put(pMo,110,ROW.parent);
   const rowArr=[...by('sibO'), one('self'), ...by('sibY')].filter(Boolean);
   const spouseP=one('spouse');
   const totalW=(rowArr.length-1+(spouseP?1:0))*XS;
@@ -2127,12 +2144,12 @@ function runQuickGen(){
     const l={ id:uid(), a:a.id, b:b.id, type }; if(via) l.via=via.id;
     S.geno.links[l.id]=l;
   };
-  mk(pgf,pgm,'marriage'); mk(mgf,mgm,'marriage'); mk(fa,mo,'marriage');
+  mk(pgf,pgm, rel2(pPgf,pPgm)); mk(mgf,mgm, rel2(pMgf,pMgm)); mk(fa,mo, rel2(pFa,pMo));
   const paA=pgf||pgm; if(paA&&fa) mk(paA,fa,'child', (pgf&&pgm)?(paA===pgf?pgm:pgf):null);
   const maA=mgf||mgm; if(maA&&mo) mk(maA,mo,'child', (mgf&&mgm)?(maA===mgf?mgm:mgf):null);
   const parA=fa||mo;
   rowNodes.forEach(n=> parA && mk(parA,n,'child', (fa&&mo)?(parA===fa?mo:fa):null));
-  if(selfN&&spN) mk(selfN,spN,'marriage');
+  if(selfN&&spN) mk(selfN,spN, rel2(spouseP,pSelf));
   kidNodes.forEach(k=> mk(selfN,k,'child', spN||null));
   const upd={};
   Object.values(S.geno.nodes).forEach(n=> upd['nodes/'+n.id]=n);
