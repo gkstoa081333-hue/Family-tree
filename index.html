@@ -667,7 +667,7 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
   </div>
 </div>
 
-<div class="dim" id="dim" onclick="closeSheet()"></div>
+<div class="dim" id="dim" onclick="dimTap()"></div>
 <div class="sheet" id="sheet">
   <div class="grab"></div>
   <div id="sheetBody"></div>
@@ -1682,7 +1682,14 @@ function fitView(){
 /* ═══ 시트: 인물 / 관계선 ═══ */
 function openSheet(html){
   $('sheetBody').innerHTML = html;
+  S.sheetAt = Date.now();   // 모바일 고스트 클릭 방지용 타임스탬프
   $('dim').classList.add('on'); $('sheet').classList.add('on');
+}
+function dimTap(){
+  /* 모바일에서 캔버스 탭 직후 브라우저가 합성하는 지연 클릭이
+     방금 열린 시트의 배경에 떨어져 시트가 즉시 닫히는 문제 방지 */
+  if(Date.now() - (S.sheetAt || 0) < 450) return;
+  closeSheet();
 }
 function closeSheet(){
   $('dim').classList.remove('on'); $('sheet').classList.remove('on');
