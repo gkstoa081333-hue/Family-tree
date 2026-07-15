@@ -625,6 +625,12 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
     <div id="stageWrap">
       <div id="stage"></div>
       <div class="hint hide" id="cvHint"></div>
+      <div id="groupBar" class="hide" style="position:absolute;left:50%;transform:translateX(-50%);bottom:16px;z-index:6;background:#22332E;color:#fff;border-radius:16px;padding:9px 12px;display:flex;gap:8px;align-items:center;font-size:12.5px;box-shadow:0 6px 18px rgba(0,0,0,.18);max-width:94%;white-space:nowrap;">
+        <span id="groupBarText">동거 구성원을 탭하세요</span>
+        <button onclick="resetGroupSel()" style="border:0;border-radius:10px;padding:6px 10px;background:rgba(255,255,255,.16);color:#fff;font-size:12px;cursor:pointer;">초기화</button>
+        <button onclick="cancelGroupMode()" style="border:0;border-radius:10px;padding:6px 10px;background:rgba(255,255,255,.16);color:#fff;font-size:12px;cursor:pointer;">취소</button>
+        <button id="groupBarDone" onclick="commitGroup()" style="border:0;border-radius:10px;padding:6px 12px;background:#6FA292;color:#fff;font-weight:700;font-size:12px;cursor:pointer;opacity:.45;" disabled>완료</button>
+      </div>
       <div class="zoom">
         <button onclick="undoGeno()" title="되돌리기 (Ctrl+Z)">↩</button>
         <button onclick="zoomBy(1.25)">+</button>
@@ -650,6 +656,9 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
       </button>
       <button class="tool" id="tlLink" onclick="setTool('link')">
         <span class="sym"><svg width="26" height="22" viewBox="0 0 26 22"><rect x="2" y="8" width="7" height="7" fill="none" stroke="#5B6E67" stroke-width="1.8"/><circle cx="20.5" cy="11.5" r="4" fill="none" stroke="#5B6E67" stroke-width="1.8"/><line x1="9" y1="11.5" x2="16.5" y2="11.5" stroke="#5B6E67" stroke-width="1.8"/></svg></span>관계선
+      </button>
+      <button class="tool" id="tlGroup" onclick="setTool('group')">
+        <span class="sym"><svg width="26" height="22" viewBox="0 0 26 22"><ellipse cx="13" cy="11" rx="10" ry="7.5" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-dasharray="4 3"/></svg></span>동거
       </button>
       <button class="tool" id="tlPan" onclick="setTool('pan')">
         <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 3v16M3 11h16" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round"/><path d="M8 6l3-3 3 3M8 16l3 3 3-3M6 8l-3 3 3 3M16 8l3 3-3 3" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>이동
@@ -1283,6 +1292,8 @@ async function openCanvas(id){
   S.geno = snap.val() || { nodes:{}, links:{} };
   S.geno.nodes = S.geno.nodes || {};
   S.geno.links = S.geno.links || {};
+  S.geno.groups = S.geno.groups || {};
+  S.groupSel = {};
 
   buildStage();
   setTool('male');            // 수정 #4: 스테이지 생성 후 도구 설정
@@ -1291,7 +1302,7 @@ async function openCanvas(id){
   if(!Object.keys(S.geno.nodes).length) hint('빈 캔버스를 탭하면 인물이 추가됩니다.');
 }
 function closeCanvas(){
-  if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.linkLayer=null; }
+  if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.linkLayer=null; S.groupLayer=null; }
   S.caseId=null;
   if(S.me) show('app');
 }
@@ -1302,6 +1313,8 @@ function buildStage(){
   S.stage = new Konva.Stage({
     container:'stage', width:wrap.clientWidth, height:wrap.clientHeight, draggable:false
   });
+  S.groupLayer = new Konva.Layer();                     // 동거 그룹 타원 레이어 (맨 아래)
+  S.stage.add(S.groupLayer);
   S.linkLayer = new Konva.Layer({ listening:false });   // 관계선 전용 레이어 (성능 개선)
   S.stage.add(S.linkLayer);
   S.layer = new Konva.Layer();
@@ -1353,15 +1366,75 @@ function resizeStage(){
 
 function setTool(t){
   S.tool = t; S.linkFrom = null; S.quickType = null; S.quickVia = undefined;
-  ['male','female','unknown','link','pan'].forEach(k=>{
+  ['male','female','unknown','link','pan','group'].forEach(k=>{
     const el = $('tl'+k[0].toUpperCase()+k.slice(1));
     if(el) el.classList.toggle('on', k===t);
   });
   if(S.stage) S.stage.draggable(t==='pan');
+  const gb = $('groupBar');
+  if(t==='group'){ S.groupSel = {}; if(gb){ gb.classList.remove('hide'); } updateGroupBar(); hintOff(); }
+  else { S.groupSel = {}; if(gb) gb.classList.add('hide'); }
   if(t==='link') hint('연결할 인물 두 명을 차례로 탭하세요.');
   else if(t==='pan') hint('드래그해서 화면을 이동합니다.');
-  else hintOff();
+  else if(t!=='group') hintOff();
   draw();
+}
+
+/* ── 동거 그룹 (점선 타원) ── */
+function updateGroupBar(){
+  const n = Object.keys(S.groupSel || {}).length;
+  $('groupBarText').textContent = n ? n+'명 선택됨' : '동거 구성원을 탭하세요';
+  const d = $('groupBarDone'); d.disabled = !n; d.style.opacity = n ? 1 : .45;
+}
+function resetGroupSel(){ S.groupSel = {}; updateGroupBar(); draw(); }
+function cancelGroupMode(){ setTool('male'); }
+function commitGroup(){
+  const members = Object.keys(S.groupSel || {});
+  if(!members.length) return;
+  const label = prompt('그룹 이름을 입력하세요 (생략 가능)', '동거');
+  if(label === null) return;   // 취소하면 선택 상태 유지한 채 중단
+  pushUndo();
+  const gid = uid();
+  S.geno.groups[gid] = { id:gid, members, label:label.trim() };
+  db.ref(genoPath()+'/groups/'+gid).set(S.geno.groups[gid]).catch(errSave);
+  metaSave();
+  setTool('male');
+  toast('동거 그룹을 만들었습니다.');
+}
+function delGroup(gid){
+  if(!confirm('이 동거 그룹 표시를 삭제할까요? (인물은 유지됩니다)')) return;
+  pushUndo();
+  delete S.geno.groups[gid];
+  db.ref(genoPath()+'/groups/'+gid).remove().catch(errSave);
+  metaSave(); draw();
+}
+function drawGroups(){
+  if(!S.groupLayer) return;
+  S.groupLayer.destroyChildren();
+  Object.values(S.geno.groups || {}).forEach(gr=>{
+    const ms = (gr.members || []).map(id=>S.geno.nodes[id]).filter(Boolean);
+    if(!ms.length) return;
+    const pad = 48;
+    const xs = ms.map(m=>m.x), ys = ms.map(m=>m.y);
+    const minX=Math.min(...xs)-pad, maxX=Math.max(...xs)+pad;
+    const minY=Math.min(...ys)-pad, maxY=Math.max(...ys)+pad;
+    const cx=(minX+maxX)/2, cy=(minY+maxY)/2;
+    const rx=Math.max((maxX-minX)/2, 42), ry=Math.max((maxY-minY)/2, 42);
+    S.groupLayer.add(new Konva.Ellipse({
+      x:cx, y:cy, radiusX:rx, radiusY:ry,
+      fill:'rgba(111,162,146,0.05)', stroke:'#7A8B85', strokeWidth:2, dash:[7,5], listening:false
+    }));
+    if(gr.label) S.groupLayer.add(new Konva.Text({
+      x:cx-80, y:cy-ry-18, width:160, align:'center',
+      text:gr.label, fontSize:12, fontStyle:'700', fontFamily:'Pretendard', fill:'#7A8B85', listening:false
+    }));
+    const del = new Konva.Group({ x: cx+rx*0.72, y: cy-ry*0.72 });
+    del.add(new Konva.Circle({ radius:10, fill:'#fff', stroke:'#CBD5D0', strokeWidth:1 }));
+    del.add(new Konva.Text({ x:-4.5, y:-7.5, text:'\u00d7', fontSize:15, fill:'#8A9A93', listening:false }));
+    del.on('click tap', e=>{ e.cancelBubble = true; delGroup(gr.id); });
+    S.groupLayer.add(del);
+  });
+  S.groupLayer.batchDraw();
 }
 let hintTimer;
 function hint(m){ const h=$('cvHint'); h.textContent=m; h.classList.remove('hide'); clearTimeout(hintTimer); hintTimer=setTimeout(hintOff,3200); }
@@ -1374,16 +1447,17 @@ function errSave(){ toast('저장에 실패했습니다. 연결을 확인해 주
 function pushUndo(){
   if(!S.geno) return;
   S.undo = S.undo || [];
-  S.undo.push(JSON.stringify({ nodes:S.geno.nodes, links:S.geno.links }));
+  S.undo.push(JSON.stringify({ nodes:S.geno.nodes, links:S.geno.links, groups:S.geno.groups||{} }));
   if(S.undo.length > 30) S.undo.shift();
 }
 function undoGeno(){
   if(!S.undo || !S.undo.length){ toast('되돌릴 작업이 없습니다.'); return; }
   const prev = JSON.parse(S.undo.pop());
-  S.geno.nodes = prev.nodes || {}; S.geno.links = prev.links || {};
+  S.geno.nodes = prev.nodes || {}; S.geno.links = prev.links || {}; S.geno.groups = prev.groups || {};
   db.ref(genoPath()).update({
     nodes: Object.keys(S.geno.nodes).length ? S.geno.nodes : null,
-    links: Object.keys(S.geno.links).length ? S.geno.links : null
+    links: Object.keys(S.geno.links).length ? S.geno.links : null,
+    groups: Object.keys(S.geno.groups).length ? S.geno.groups : null
   }).catch(errSave);
   metaSave();
   S.sel=null; S.linkFrom=null; S.quickType=null; S.quickVia=undefined;
@@ -1422,6 +1496,7 @@ function drawLinks(){
 }
 function draw(){
   if(!S.layer) return;
+  drawGroups();
   drawLinks();
   S.layer.destroyChildren();
   Object.values(S.geno.nodes).forEach(drawNode);
@@ -1500,6 +1575,7 @@ function drawLink(l, a, b){
 
 function drawNode(n){
   const g = new Konva.Group({ x:n.x, y:n.y, draggable:true });
+  if(S.tool==='group') g.opacity(S.groupSel && S.groupSel[n.id] ? 1 : 0.3);   // 미선택자 구별
   const col = nodeColor(n);
   const isSel = S.sel===n.id, isFrom = S.linkFrom===n.id;
   const sw = 2.4;
@@ -1537,6 +1613,11 @@ function drawNode(n){
       x:-R-9, y:-R-9, width:NW+18, height:NW+18, cornerRadius:8,
       stroke: isFrom ? '#C15B47' : '#6FA292', strokeWidth:2, dash:[5,4], listening:false }));
   }
+  if(S.tool==='group' && S.groupSel && S.groupSel[n.id]){
+    g.add(new Konva.Rect({
+      x:-R-9, y:-R-9, width:NW+18, height:NW+18, cornerRadius:8,
+      stroke:'#4C7A6D', strokeWidth:2.6, listening:false }));
+  }
 
   /* 수정 #9: 만나이 근사 (연도차, +1 제거) */
   const age = n.birth ? (new Date().getFullYear() - parseInt(n.birth)) : null;
@@ -1552,11 +1633,16 @@ function drawNode(n){
   g.on('dragmove', ()=>{
     n.x = Math.round(g.x()); n.y = Math.round(g.y());
     drawLinks();   // 관계선만 갱신 (노드 재생성 제거로 드래그 성능 개선)
+    drawGroups();   // 동거 타원도 이동 추적
   });
   g.on('dragstart', pushUndo);            // 이동 전 좌표 스냅샷 (되돌리기용)
   g.on('dragend', ()=> saveNodePos(n));   // 수정 #7: 좌표만 부분 저장
   g.on('click tap', e=>{
     e.cancelBubble = true;
+    if(S.tool==='group'){
+      if(S.groupSel[n.id]) delete S.groupSel[n.id]; else S.groupSel[n.id] = true;
+      updateGroupBar(); draw(); return;
+    }
     if(S.tool==='link'){
       if(!S.linkFrom){ S.linkFrom = n.id; S.quickType = null; S.quickVia = undefined; hint('두 번째 인물을 탭하세요.'); draw(); }
       else if(S.linkFrom === n.id){ S.linkFrom = null; S.quickType = null; S.quickVia = undefined; draw(); }
@@ -1682,6 +1768,13 @@ function delNode(id){
   Object.entries(S.geno.links).forEach(([lid,l])=>{
     if(l.a===id || l.b===id){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
   });
+  Object.entries(S.geno.groups || {}).forEach(([gid,gr])=>{
+    const m = (gr.members || []).filter(x=>x!==id);
+    if(m.length !== (gr.members || []).length){
+      if(m.length < 1){ delete S.geno.groups[gid]; upd['groups/'+gid]=null; }
+      else { S.geno.groups[gid].members = m; upd['groups/'+gid+'/members']=m; }
+    }
+  });
   db.ref(genoPath()).update(upd).catch(errSave);
   metaSave();
   S.sel=null; draw(); closeSheet(); toast('삭제했습니다.');
@@ -1717,7 +1810,6 @@ function openRelPicker(aId, bId){
     ${group('부부 · 커플', ['marriage','cohabit','separated','divorced'])}
     ${group('자녀', ['child','adopted'])}
     ${group('정서적 관계', ['close','conflict','cutoff'])}
-    ${group('생활 관계', ['household'])}
   `);
 }
 function addLink(a,b,type){
@@ -1929,7 +2021,7 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){ if(appUnlocked()) pinStamp(); return; }   // 나갈 때 마지막 사용시각 기록
   if(S.me?.pinHash && appUnlocked() && !pinValid()){             // 유예시간 지나서 돌아오면 재잠금
     closeSheet();
-    if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.linkLayer=null; S.caseId=null; }
+    if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.linkLayer=null; S.groupLayer=null; S.caseId=null; }
     startPin('verify');
   }
 });
