@@ -729,7 +729,8 @@ const RELS = {
   adopted:   { label:'입양',  desc:'점선 자녀선',       kind:'child'  },
   close:     { label:'친밀',  desc:'정서: 굵은 이중선',  kind:'emo'    },
   conflict:  { label:'갈등',  desc:'정서: 지그재그선',   kind:'emo'    },
-  cutoff:    { label:'단절',  desc:'정서: 끊긴 선',     kind:'emo'    }
+  cutoff:    { label:'단절',  desc:'정서: 끊긴 선',     kind:'emo'    },
+  household: { label:'동거가족', desc:'같은 집에 사는 가족 (점선)', kind:'house' }
 };
 
 /* ═══ 유틸 ═══ */
@@ -1286,7 +1287,7 @@ async function openCanvas(id){
   if(!Object.keys(S.geno.nodes).length) hint('빈 캔버스를 탭하면 인물이 추가됩니다.');
 }
 function closeCanvas(){
-  if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; }
+  if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.linkLayer=null; }
   S.caseId=null;
   if(S.me) show('app');
 }
@@ -1297,6 +1298,8 @@ function buildStage(){
   S.stage = new Konva.Stage({
     container:'stage', width:wrap.clientWidth, height:wrap.clientHeight, draggable:false
   });
+  S.linkLayer = new Konva.Layer({ listening:false });   // 관계선 전용 레이어 (성능 개선)
+  S.stage.add(S.linkLayer);
   S.layer = new Konva.Layer();
   S.stage.add(S.layer);
 
@@ -1332,7 +1335,7 @@ function buildStage(){
   S.stage.on('click tap', e=>{
     if(e.target !== S.stage) return;
     if(!['male','female','unknown'].includes(S.tool)){
-      S.sel=null; S.linkFrom=null; draw(); return;
+      S.sel=null; S.linkFrom=null; S.quickType=null; draw(); return;
     }
     const p = S.stage.getPointerPosition(), s = S.stage.scaleX();
     addNode(S.tool, (p.x-S.stage.x())/s, (p.y-S.stage.y())/s);
@@ -1345,7 +1348,7 @@ function resizeStage(){
 }
 
 function setTool(t){
-  S.tool = t; S.linkFrom = null;
+  S.tool = t; S.linkFrom = null; S.quickType = null;
   ['male','female','unknown','link','pan'].forEach(k=>{
     const el = $('tl'+k[0].toUpperCase()+k.slice(1));
     if(el) el.classList.toggle('on', k===t);
@@ -1383,15 +1386,21 @@ function nodeColor(n){
 }
 
 /* ── 렌더 ── */
-function draw(){
-  if(!S.layer) return;
-  S.layer.destroyChildren();
+function drawLinks(){
+  if(!S.linkLayer) return;
+  S.linkLayer.destroyChildren();
   Object.values(S.geno.links).forEach(l=>{
     const a = S.geno.nodes[l.a], b = S.geno.nodes[l.b];
     if(a && b) drawLink(l, a, b);
   });
+  S.linkLayer.batchDraw();
+}
+function draw(){
+  if(!S.layer) return;
+  drawLinks();
+  S.layer.destroyChildren();
   Object.values(S.geno.nodes).forEach(drawNode);
-  S.layer.draw();
+  S.layer.batchDraw();
 }
 
 function drawLink(l, a, b){
@@ -1402,11 +1411,18 @@ function drawLink(l, a, b){
     /* 수정 #12: 부모가 위든 아래든 방향 자동 판별 */
     const dir = b.y >= a.y ? 1 : -1;
     const my = (a.y + b.y)/2;
-    S.layer.add(new Konva.Line({
+    S.linkLayer.add(new Konva.Line({
       points:[a.x, a.y + dir*NW/2, a.x, my, b.x, my, b.x, b.y - dir*NW/2],
       stroke:col, strokeWidth:2,
       dash: l.type==='adopted' ? [6,4] : undefined,
       listening:false
+    }));
+    return;
+  }
+
+  if(def.kind==='house'){
+    S.linkLayer.add(new Konva.Line({
+      points:[a.x, a.y, b.x, b.y], stroke:'#8A9A93', strokeWidth:1.8, dash:[3,6], listening:false
     }));
     return;
   }
@@ -1421,24 +1437,24 @@ function drawLink(l, a, b){
         const off = (i%2? 6:-6) * (i&&i<steps?1:0);
         pts.push(x + nx/len*off, y + ny/len*off);
       }
-      S.layer.add(new Konva.Line({ points:pts, stroke:c, strokeWidth:2, listening:false }));
+      S.linkLayer.add(new Konva.Line({ points:pts, stroke:c, strokeWidth:2, listening:false }));
     } else if(l.type==='close'){
       [-2.5, 2.5].forEach(o=>{
         const nx=-(b.y-a.y), ny=(b.x-a.x), len=Math.hypot(nx,ny)||1;
-        S.layer.add(new Konva.Line({
+        S.linkLayer.add(new Konva.Line({
           points:[a.x+nx/len*o, a.y+ny/len*o, b.x+nx/len*o, b.y+ny/len*o],
           stroke:c, strokeWidth:2, listening:false }));
       });
     } else {
-      S.layer.add(new Konva.Line({ points:[a.x,a.y,b.x,b.y], stroke:c, strokeWidth:2, dash:[10,7], listening:false }));
+      S.linkLayer.add(new Konva.Line({ points:[a.x,a.y,b.x,b.y], stroke:c, strokeWidth:2, dash:[10,7], listening:false }));
       const mx=(a.x+b.x)/2, my2=(a.y+b.y)/2;
-      S.layer.add(new Konva.Line({ points:[mx-7,my2-7,mx+7,my2+7], stroke:c, strokeWidth:2, listening:false }));
-      S.layer.add(new Konva.Line({ points:[mx+7,my2-7,mx-7,my2+7], stroke:c, strokeWidth:2, listening:false }));
+      S.linkLayer.add(new Konva.Line({ points:[mx-7,my2-7,mx+7,my2+7], stroke:c, strokeWidth:2, listening:false }));
+      S.linkLayer.add(new Konva.Line({ points:[mx+7,my2-7,mx-7,my2+7], stroke:c, strokeWidth:2, listening:false }));
     }
     return;
   }
 
-  S.layer.add(new Konva.Line({
+  S.linkLayer.add(new Konva.Line({
     points:[a.x, a.y, b.x, b.y], stroke:col, strokeWidth:2,
     dash: l.type==='cohabit' ? [7,5] : undefined, listening:false
   }));
@@ -1447,7 +1463,7 @@ function drawLink(l, a, b){
     const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
     for(let i=0;i<slashes;i++){
       const o = slashes===1 ? 0 : (i? 6 : -6);
-      S.layer.add(new Konva.Line({
+      S.linkLayer.add(new Konva.Line({
         points:[mx+o-6, my+9, mx+o+6, my-9], stroke:col, strokeWidth:2, listening:false }));
     }
   }
@@ -1506,19 +1522,15 @@ function drawNode(n){
 
   g.on('dragmove', ()=>{
     n.x = Math.round(g.x()); n.y = Math.round(g.y());
-    S.layer.destroyChildren();
-    Object.values(S.geno.links).forEach(l=>{
-      const a=S.geno.nodes[l.a], b=S.geno.nodes[l.b]; if(a&&b) drawLink(l,a,b);
-    });
-    Object.values(S.geno.nodes).forEach(drawNode);
-    S.layer.draw();
+    drawLinks();   // 관계선만 갱신 (노드 재생성 제거로 드래그 성능 개선)
   });
   g.on('dragend', ()=> saveNodePos(n));   // 수정 #7: 좌표만 부분 저장
   g.on('click tap', e=>{
     e.cancelBubble = true;
     if(S.tool==='link'){
-      if(!S.linkFrom){ S.linkFrom = n.id; hint('두 번째 인물을 탭하세요.'); draw(); }
-      else if(S.linkFrom === n.id){ S.linkFrom = null; draw(); }
+      if(!S.linkFrom){ S.linkFrom = n.id; S.quickType = null; hint('두 번째 인물을 탭하세요.'); draw(); }
+      else if(S.linkFrom === n.id){ S.linkFrom = null; S.quickType = null; draw(); }
+      else if(S.quickType){ addLink(S.linkFrom, n.id, S.quickType); }   // 자녀 연속 연결
       else { openRelPicker(S.linkFrom, n.id); }
       return;
     }
@@ -1654,7 +1666,8 @@ function openRelPicker(aId, bId){
     adopted:   `<svg width="44" height="20"><path d="M8 2 v8 h28 v8" fill="none" stroke="#22332E" stroke-width="2" stroke-dasharray="5 3"/></svg>`,
     close:     `<svg width="44" height="20"><line x1="2" y1="7" x2="42" y2="7" stroke="#4C7A6D" stroke-width="2"/><line x1="2" y1="13" x2="42" y2="13" stroke="#4C7A6D" stroke-width="2"/></svg>`,
     conflict:  `<svg width="44" height="20"><path d="M2 10 l6-5 6 10 6-10 6 10 6-10 6 5" fill="none" stroke="#C15B47" stroke-width="2"/></svg>`,
-    cutoff:    `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#7A8B85" stroke-width="2" stroke-dasharray="8 6"/><line x1="17" y1="4" x2="27" y2="16" stroke="#7A8B85" stroke-width="2"/><line x1="27" y1="4" x2="17" y2="16" stroke="#7A8B85" stroke-width="2"/></svg>`
+    cutoff:    `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#7A8B85" stroke-width="2" stroke-dasharray="8 6"/><line x1="17" y1="4" x2="27" y2="16" stroke="#7A8B85" stroke-width="2"/><line x1="27" y1="4" x2="17" y2="16" stroke="#7A8B85" stroke-width="2"/></svg>`,
+    household: `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#8A9A93" stroke-width="2" stroke-dasharray="3 6"/></svg>`
   };
   const group = (title, keys) => `
     <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin:14px 0 8px;">${title}</div>
@@ -1672,6 +1685,7 @@ function openRelPicker(aId, bId){
     ${group('부부 · 커플', ['marriage','cohabit','separated','divorced'])}
     ${group('자녀', ['child','adopted'])}
     ${group('정서적 관계', ['close','conflict','cutoff'])}
+    ${group('생활 관계', ['household'])}
   `);
 }
 function addLink(a,b,type){
@@ -1687,8 +1701,11 @@ function addLink(a,b,type){
   upd['links/'+id] = link;
   db.ref(genoPath()).update(upd).catch(errSave);   // 수정 #7: 링크 단위 저장
   metaSave();
-  S.linkFrom=null; draw(); closeSheet();
+  if(kind === 'child'){ S.linkFrom = a; S.quickType = type; }   // 부모 유지: 다음 자녀 바로 연결
+  else { S.linkFrom = null; S.quickType = null; }
+  draw(); closeSheet();
   toast(`${RELS[type].label} 관계를 연결했습니다.`);
+  if(S.quickType) hint('이어서 다른 자녀를 탭하면 바로 연결됩니다. 빈 곳을 탭하면 종료.');
 }
 
 /* ── 메타(썸네일·요약) 저장 — 디바운스 ── */
@@ -1843,7 +1860,7 @@ document.addEventListener('visibilitychange', ()=>{
   if(document.hidden){ if(appUnlocked()) pinStamp(); return; }   // 나갈 때 마지막 사용시각 기록
   if(S.me?.pinHash && appUnlocked() && !pinValid()){             // 유예시간 지나서 돌아오면 재잠금
     closeSheet();
-    if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.caseId=null; }
+    if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.linkLayer=null; S.caseId=null; }
     startPin('verify');
   }
 });
