@@ -380,6 +380,7 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
       </svg>
       <h1>가계도</h1>
       <p>사회복지 현장을 위한 제네그램 도구</p>
+      <p id="verTag" style="font-size:11px;color:#B8C4BF;margin-top:4px;"></p>
     </div>
 
     <div class="tabs" id="authTabs">
@@ -762,6 +763,7 @@ async function pinHash(pin){
   const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(S.uid + ':' + pin));
   return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
 }
+const APP_VER = 'v2.7 (2026-07-16)';
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
 function timeAgo(ts){
   if(!ts) return '';
@@ -1005,8 +1007,17 @@ async function pinSubmit(){
   const pin = S.pinBuf;
   if(S.pinMode==='verify'){
     const h = await pinHash(pin);
-    if(h === S.me.pinHash){ pinStamp(); enterApp(); }
-    else pinFail('PIN이 맞지 않습니다.');
+    if(h === S.me.pinHash){ S.pinTries = 0; pinStamp(); enterApp(); }
+    else {
+      S.pinTries = (S.pinTries || 0) + 1;
+      if(S.pinTries >= 5){
+        S.pinTries = 0;
+        alert('PIN을 5회 잘못 입력해 보안을 위해 로그아웃합니다.\n이메일과 비밀번호로 다시 로그인해 주세요.');
+        doLogout();
+        return;
+      }
+      pinFail('PIN이 맞지 않습니다. ('+S.pinTries+'/5회)');
+    }
     return;
   }
   if(!S._pinFirst){
@@ -1295,6 +1306,39 @@ async function openCanvas(id){
   S.geno.groups = S.geno.groups || {};
   S.groupSel = {};
 
+  /* 동시 편집 안내: 다른 직원이 열어둔 케이스면 경고 */
+  try{
+    const eSnap = await db.ref(casePath(id)+'/editing').once('value');
+    const ed = eSnap.val();
+    if(ed && ed.uid !== S.uid && Date.now()-(ed.at||0) < 10*60*1000){
+      alert((ed.name||'다른 직원')+'님이 이 케이스를 편집 중입니다.\n동시에 수정하면 서로의 변경을 덮어쓸 수 있으니 주의해 주세요.');
+    }
+    const myEdit = db.ref(casePath(id)+'/editing');
+    myEdit.set({ uid:S.uid, name:(S.me&&S.me.name)||'', at:Date.now() }).catch(()=>{});
+    myEdit.onDisconnect().remove();
+  }catch(e){}
+
+  /* 오프라인 보관본 복구: 이전에 저장 실패로 이 기기에 남은 변경본 확인 */
+  try{
+    const raw = localStorage.getItem('geno_pending_'+id);
+    if(raw){
+      const bk = JSON.parse(raw);
+      const t = new Date(bk.at||0);
+      const when = (t.getMonth()+1)+'월 '+t.getDate()+'일 '+t.getHours()+':'+String(t.getMinutes()).padStart(2,'0');
+      if(confirm('저장 실패로 이 기기에 보관된 변경본이 있습니다. ('+when+')\n\n[확인] 보관본으로 복구하고 서버에 저장\n[취소] 보관본을 버리고 서버 내용 사용')){
+        S.geno.nodes = bk.nodes || {}; S.geno.links = bk.links || {}; S.geno.groups = bk.groups || {};
+        db.ref(genoPath()).update({
+          nodes: Object.keys(S.geno.nodes).length ? S.geno.nodes : null,
+          links: Object.keys(S.geno.links).length ? S.geno.links : null,
+          groups: Object.keys(S.geno.groups).length ? S.geno.groups : null
+        }).then(()=>{ localStorage.removeItem('geno_pending_'+id); toast('보관본을 복구해 저장했습니다.'); })
+          .catch(errSave);
+      } else {
+        localStorage.removeItem('geno_pending_'+id);
+      }
+    }
+  }catch(e){}
+
   buildStage();
   setTool('male');            // 수정 #4: 스테이지 생성 후 도구 설정
   draw();
@@ -1302,6 +1346,13 @@ async function openCanvas(id){
   if(!Object.keys(S.geno.nodes).length) hint('빈 캔버스를 탭하면 인물이 추가됩니다.');
 }
 function closeCanvas(){
+  const cid = S.caseId;
+  if(cid){
+    db.ref(casePath(cid)+'/editing').once('value').then(sn=>{
+      const ed = sn.val();
+      if(ed && ed.uid === S.uid) db.ref(casePath(cid)+'/editing').remove().catch(()=>{});
+    }).catch(()=>{});
+  }
   if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; S.linkLayer=null; S.groupLayer=null; }
   S.caseId=null;
   if(S.me) show('app');
@@ -1441,7 +1492,18 @@ function hint(m){ const h=$('cvHint'); h.textContent=m; h.classList.remove('hide
 function hintOff(){ $('cvHint').classList.add('hide'); }
 
 /* ── 노드 CRUD (수정 #7: 노드/링크 단위 저장) ── */
-function errSave(){ toast('저장에 실패했습니다. 연결을 확인해 주세요.'); }
+function backupLocal(){
+  try{
+    if(!S.caseId || !S.geno) return;
+    localStorage.setItem('geno_pending_'+S.caseId, JSON.stringify({
+      at: Date.now(), nodes:S.geno.nodes, links:S.geno.links, groups:S.geno.groups||{}
+    }));
+  }catch(e){}
+}
+function errSave(){
+  backupLocal();
+  toast('저장에 실패했습니다. 변경 내용은 이 기기에 임시 보관했으니, 연결 후 케이스를 다시 열면 복구할 수 있습니다.');
+}
 
 /* ── 되돌리기: 변경 직전 상태를 스냅샷으로 저장 (최대 30단계) ── */
 function pushUndo(){
@@ -1787,6 +1849,15 @@ function delNode(id){
   S.sel=null; draw(); closeSheet(); toast('삭제했습니다.');
 }
 
+function delLink(lid){
+  if(!S.geno.links[lid]) return;
+  pushUndo();
+  delete S.geno.links[lid];
+  db.ref(genoPath()+'/links/'+lid).remove().catch(errSave);
+  metaSave();
+  S.linkFrom=null; S.quickType=null; S.quickVia=undefined;
+  closeSheet(); draw(); toast('관계선을 삭제했습니다.');
+}
 function openRelPicker(aId, bId){
   const a=S.geno.nodes[aId], b=S.geno.nodes[bId];
   const sym = {
@@ -1817,6 +1888,20 @@ function openRelPicker(aId, bId){
     ${group('부부 · 커플', ['marriage','cohabit','separated','divorced'])}
     ${group('자녀', ['child','adopted'])}
     ${group('정서적 관계', ['close','conflict','cutoff'])}
+    ${(()=>{
+      const ex = Object.entries(S.geno.links).filter(([,l])=>
+        (l.a===aId && l.b===bId) || (l.a===bId && l.b===aId));
+      if(!ex.length) return '';
+      return `
+        <div style="font-size:12px;font-weight:700;color:var(--danger);margin:16px 0 8px;">현재 연결된 관계 — 탭하면 삭제</div>
+        <div class="rel-list">
+          ${ex.map(([lid,l])=>`
+            <button class="rel-item" style="border-color:#EBC8C0;" onclick="delLink('${lid}')">
+              <span class="rl-sym">${sym[l.type]||''}</span>
+              <span><b style="color:var(--danger);">${(RELS[l.type]||{}).label||l.type} 삭제</b><small>이 관계선만 지웁니다</small></span>
+            </button>`).join('')}
+        </div>`;
+    })()}
   `);
 }
 function addLink(a,b,type){
@@ -1915,9 +2000,9 @@ function exportPNG(){
       width: S.stage.width()/s, height: S.stage.height()/s,
       fill:'#ffffff', listening:false
     });
-    S.layer.add(bg); bg.moveToBottom(); S.layer.draw();
+    S.groupLayer.add(bg); bg.moveToBottom(); S.groupLayer.draw();   // 흰 배경은 맨 아래 레이어에
     const url = S.stage.toDataURL({ pixelRatio:2, mimeType:'image/png' });
-    bg.destroy(); S.layer.draw();
+    bg.destroy(); S.groupLayer.draw();
 
     const a = document.createElement('a');
     a.download = `${((S.cases[S.caseId]||{}).title||'가계도').replace(/[\\/:*?"<>|]/g,'')}_가계도.png`;
@@ -2042,6 +2127,18 @@ document.addEventListener('visibilitychange', ()=>{
   }
 });
 window.addEventListener('pagehide', ()=>{ if(appUnlocked()) pinStamp(); });   // 탭/앱 종료 시에도 기록
+
+/* 버전 표시: 캐시/배포 문제 진단용 */
+(function(){
+  const v = $('verTag'); if(v) v.textContent = APP_VER;
+  const me = $('meRole'); if(me && me.parentElement) {
+    const tag = document.createElement('div');
+    tag.style.cssText = 'font-size:11px;color:#B8C4BF;margin-top:6px;width:100%;';
+    tag.textContent = '앱 버전 ' + APP_VER;
+    me.parentElement.appendChild(tag);
+  }
+  console.info('가계도 앱 ' + APP_VER);
+})();
 
 /* ── DEL 키: 선택된 인물 삭제 ── */
 document.addEventListener('keydown', e=>{
