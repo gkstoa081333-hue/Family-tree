@@ -627,14 +627,33 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
         <button onclick="zoomBy(0.8)">−</button>
         <button onclick="fitView()" style="font-size:11px;font-weight:700;">맞춤</button>
       </div>
-      <div class="legend">
+      <!-- 관계 범례 (확장) -->
+      <div class="legend" id="legendBox">
+        <div style="font-weight:700;margin-bottom:4px;font-size:11px;color:var(--ink);">상태 코딩</div>
         <div><i style="background:var(--st-addict)"></i>중독</div>
         <div><i style="background:var(--st-mental)"></i>우울·정신</div>
         <div><i style="background:var(--st-phys)"></i>신체질환</div>
+        <div><i style="background:var(--st-care)"></i>치료 중</div>
+        <div><i style="background:var(--st-disab)"></i>장애</div>
+        <div style="font-weight:700;margin:6px 0 4px;font-size:11px;color:var(--ink);">관계선</div>
+        <div><svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#22332E" stroke-width="1.5"/></svg> 결혼</div>
+        <div><svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#22332E" stroke-width="1.5" stroke-dasharray="4 3"/></svg> 동거</div>
+        <div><svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#22332E" stroke-width="1.5"/><line x1="14" y1="1" x2="14" y2="9" stroke="#22332E" stroke-width="1.5"/></svg> 별거</div>
+        <div><svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#22332E" stroke-width="1.5"/><line x1="11" y1="1" x2="11" y2="9" stroke="#22332E" stroke-width="1.5"/><line x1="17" y1="1" x2="17" y2="9" stroke="#22332E" stroke-width="1.5"/></svg> 이혼</div>
+        <div><svg width="28" height="10"><path d="M0 2v3h28v3" stroke="#22332E" stroke-width="1.5" fill="none"/></svg> 자녀</div>
+        <div><svg width="28" height="10"><path d="M0 2v3h28v3" stroke="#22332E" stroke-width="1.5" fill="none" stroke-dasharray="4 3"/></svg> 입양</div>
+        <div><svg width="28" height="10"><line x1="0" y1="3" x2="28" y2="3" stroke="#4C7A6D" stroke-width="1.5"/><line x1="0" y1="7" x2="28" y2="7" stroke="#4C7A6D" stroke-width="1.5"/></svg> 친밀</div>
+        <div><svg width="28" height="10"><path d="M0 5l4-3 4 6 4-6 4 6 4-6 4 6 4-3" stroke="#C15B47" stroke-width="1.5" fill="none"/></svg> 갈등</div>
+        <div><svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#7A8B85" stroke-width="1.5" stroke-dasharray="6 4"/><line x1="11" y1="1" x2="17" y2="9" stroke="#7A8B85" stroke-width="1.5"/></svg> 단절</div>
+        <div><svg width="28" height="10"><line x1="0" y1="5" x2="28" y2="5" stroke="#8A6FA8" stroke-width="1.5" stroke-dasharray="3 3"/></svg> 소원</div>
+        <div><svg width="28" height="10"><line x1="0" y1="3" x2="28" y2="3" stroke="#4C7A6D" stroke-width="1.5"/><path d="M0 8l4-2 4 4 4-4 4 4 4-4 4 4 4-2" stroke="#C15B47" stroke-width="1" fill="none"/></svg> 복합</div>
       </div>
     </div>
 
     <div class="toolbar">
+      <button class="tool" id="tlSelect" onclick="setTool('select')">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M5 3l2 16 4-5 5 2L5 3z" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linejoin="round"/></svg></span>선택
+      </button>
       <button class="tool on" id="tlMale" onclick="setTool('male')">
         <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><rect x="4" y="4" width="14" height="14" fill="none" stroke="#5B6E67" stroke-width="2"/></svg></span>남성
       </button>
@@ -646,6 +665,9 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
       </button>
       <button class="tool" id="tlLink" onclick="setTool('link')">
         <span class="sym"><svg width="26" height="22" viewBox="0 0 26 22"><rect x="2" y="8" width="7" height="7" fill="none" stroke="#5B6E67" stroke-width="1.8"/><circle cx="20.5" cy="11.5" r="4" fill="none" stroke="#5B6E67" stroke-width="1.8"/><line x1="9" y1="11.5" x2="16.5" y2="11.5" stroke="#5B6E67" stroke-width="1.8"/></svg></span>관계선
+      </button>
+      <button class="tool" id="tlEraser" onclick="setTool('eraser')">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M3 16l6-12h4l6 12" fill="none" stroke="#C15B47" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="6" y1="10" x2="16" y2="10" stroke="#C15B47" stroke-width="1.8"/><line x1="3" y1="16" x2="19" y2="16" stroke="#C15B47" stroke-width="1.8" stroke-linecap="round"/></svg></span>지우개
       </button>
       <button class="tool" id="tlPan" onclick="setTool('pan')">
         <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 3v16M3 11h16" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round"/><path d="M8 6l3-3 3 3M8 16l3 3 3-3M6 8l-3 3 3 3M16 8l3 3-3 3" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>이동
@@ -695,6 +717,7 @@ const S = {
   cases:{},                    // 내가 열람 가능한 것
   caseId:null, geno:{nodes:{},links:{}},
   tool:'male', sel:null, linkFrom:null,
+  selected: new Set(),         // 다중 선택된 노드 ID
   stage:null, layer:null,
   pinBuf:'', pinMode:'verify',
   tab:'cases'
@@ -715,11 +738,14 @@ const RELS = {
   cohabit:   { label:'동거',  desc:'점선으로 연결',     kind:'couple' },
   separated: { label:'별거',  desc:'사선 1개 표시',     kind:'couple' },
   divorced:  { label:'이혼',  desc:'사선 2개 표시',     kind:'couple' },
+  remarriage:{ label:'재혼',  desc:'이전 이혼 + 새 결혼', kind:'couple' },
   child:     { label:'자녀',  desc:'부모 → 자녀로 연결', kind:'child'  },
   adopted:   { label:'입양',  desc:'점선 자녀선',       kind:'child'  },
   close:     { label:'친밀',  desc:'정서: 굵은 이중선',  kind:'emo'    },
   conflict:  { label:'갈등',  desc:'정서: 지그재그선',   kind:'emo'    },
-  cutoff:    { label:'단절',  desc:'정서: 끊긴 선',     kind:'emo'    }
+  cutoff:    { label:'단절',  desc:'정서: 끊긴 선',     kind:'emo'    },
+  distant:   { label:'소원',  desc:'정서: 점선 (거리감)', kind:'emo'    },
+  complex:   { label:'복합',  desc:'정서: 친밀+갈등 혼합', kind:'emo'   }
 };
 
 /* ═══ 유틸 ═══ */
@@ -1336,14 +1362,17 @@ function resizeStage(){
 
 function setTool(t){
   S.tool = t; S.linkFrom = null;
-  ['male','female','unknown','link','pan'].forEach(k=>{
+  ['select','male','female','unknown','link','eraser','pan'].forEach(k=>{
     const el = $('tl'+k[0].toUpperCase()+k.slice(1));
     if(el) el.classList.toggle('on', k===t);
   });
   if(S.stage) S.stage.draggable(t==='pan');
   if(t==='link') hint('연결할 인물 두 명을 차례로 탭하세요.');
   else if(t==='pan') hint('드래그해서 화면을 이동합니다.');
+  else if(t==='eraser') hint('삭제할 인물이나 관계선을 탭하세요.');
+  else if(t==='select') hint('인물을 탭해 선택하세요. Shift+탭으로 다중 선택.');
   else hintOff();
+  if(t!=='select') S.selected.clear();
   draw();
 }
 let hintTimer;
@@ -1388,22 +1417,62 @@ function draw(){
 function drawLink(l, a, b){
   const def = RELS[l.type] || RELS.marriage;
   const col = '#22332E';
+  const isEraser = S.tool==='eraser';
+  
+  /* 관계선 클릭 영역 (투명 히트 영역) */
+  function addHitLine(pts){
+    const hit = new Konva.Line({
+      points:pts, stroke:'transparent', strokeWidth:14, listening:true
+    });
+    hit.on('click tap', e => {
+      e.cancelBubble = true;
+      if(isEraser){
+        if(confirm(`${RELS[l.type]?.label||'관계'} 관계선을 삭제할까요?`)){
+          delete S.geno.links[l.id];
+          db.ref(genoPath()+'/links/'+l.id).remove().catch(errSave);
+          metaSave(); draw(); toast('관계선을 삭제했습니다.');
+        }
+      } else {
+        openLinkEdit(l.id);
+      }
+    });
+    S.layer.add(hit);
+  }
+  
+  /* 연도 라벨 */
+  function addYearLabel(x, y){
+    const yr = l.year || l.yearStart;
+    if(!yr) return;
+    const txt = l.yearEnd ? `${yr}–${l.yearEnd}` : yr;
+    S.layer.add(new Konva.Text({
+      x:x-30, y:y-16, width:60, align:'center',
+      text:String(txt), fontSize:10, fontFamily:'Pretendard',
+      fill:'var(--ink-soft,#5B6E67)', listening:false
+    }));
+  }
 
   if(def.kind==='child'){
-    /* 수정 #12: 부모가 위든 아래든 방향 자동 판별 */
     const dir = b.y >= a.y ? 1 : -1;
-    const my = (a.y + b.y)/2;
+    /* 자녀선 개선: 부모 하단 → 중간 수평 → 자녀 상단 (여유값 조정) */
+    const parentY = a.y + dir*(NW/2 + 4);
+    const childY  = b.y - dir*(NW/2 + 4);
+    const midY = (parentY + childY) / 2;
+    const pts = [a.x, parentY, a.x, midY, b.x, midY, b.x, childY];
     S.layer.add(new Konva.Line({
-      points:[a.x, a.y + dir*NW/2, a.x, my, b.x, my, b.x, b.y - dir*NW/2],
-      stroke:col, strokeWidth:2,
-      dash: l.type==='adopted' ? [6,4] : undefined,
-      listening:false
+      points:pts, stroke:col, strokeWidth:2,
+      dash: l.type==='adopted' ? [6,4] : undefined, listening:false
     }));
+    addHitLine(pts);
     return;
   }
 
   if(def.kind==='emo'){
-    const c = { close:'#4C7A6D', conflict:'#C15B47', cutoff:'#7A8B85' }[l.type];
+    const emoColors = {
+      close:'#4C7A6D', conflict:'#C15B47', cutoff:'#7A8B85',
+      distant:'#8A6FA8', complex:'#C15B47'
+    };
+    const c = emoColors[l.type] || '#7A8B85';
+
     if(l.type==='conflict'){
       const steps=8, pts=[];
       for(let i=0;i<=steps;i++){
@@ -1413,6 +1482,7 @@ function drawLink(l, a, b){
         pts.push(x + nx/len*off, y + ny/len*off);
       }
       S.layer.add(new Konva.Line({ points:pts, stroke:c, strokeWidth:2, listening:false }));
+      addHitLine([a.x,a.y,b.x,b.y]);
     } else if(l.type==='close'){
       [-2.5, 2.5].forEach(o=>{
         const nx=-(b.y-a.y), ny=(b.x-a.x), len=Math.hypot(nx,ny)||1;
@@ -1420,34 +1490,70 @@ function drawLink(l, a, b){
           points:[a.x+nx/len*o, a.y+ny/len*o, b.x+nx/len*o, b.y+ny/len*o],
           stroke:c, strokeWidth:2, listening:false }));
       });
+      addHitLine([a.x,a.y,b.x,b.y]);
+    } else if(l.type==='distant'){
+      /* 소원: 점선 (간격 넓은) */
+      S.layer.add(new Konva.Line({ points:[a.x,a.y,b.x,b.y], stroke:c, strokeWidth:2, dash:[4,6], listening:false }));
+      addHitLine([a.x,a.y,b.x,b.y]);
+    } else if(l.type==='complex'){
+      /* 복합: 친밀(이중선 위) + 갈등(지그재그 아래) */
+      const nx=-(b.y-a.y), ny=(b.x-a.x), len=Math.hypot(nx,ny)||1;
+      // 친밀선 (위쪽)
+      [-3, -7].forEach(o=>{
+        S.layer.add(new Konva.Line({
+          points:[a.x+nx/len*o, a.y+ny/len*o, b.x+nx/len*o, b.y+ny/len*o],
+          stroke:'#4C7A6D', strokeWidth:1.8, listening:false }));
+      });
+      // 갈등선 (아래쪽)
+      const steps2=8, pts2=[];
+      for(let i=0;i<=steps2;i++){
+        const t=i/steps2, x=a.x+(b.x-a.x)*t+nx/len*4, y=a.y+(b.y-a.y)*t+ny/len*4;
+        const off2 = (i%2? 4:-4) * (i&&i<steps2?1:0);
+        pts2.push(x + nx/len*off2, y + ny/len*off2);
+      }
+      S.layer.add(new Konva.Line({ points:pts2, stroke:'#C15B47', strokeWidth:1.5, listening:false }));
+      addHitLine([a.x,a.y,b.x,b.y]);
     } else {
+      /* 단절 (cutoff) */
       S.layer.add(new Konva.Line({ points:[a.x,a.y,b.x,b.y], stroke:c, strokeWidth:2, dash:[10,7], listening:false }));
       const mx=(a.x+b.x)/2, my2=(a.y+b.y)/2;
       S.layer.add(new Konva.Line({ points:[mx-7,my2-7,mx+7,my2+7], stroke:c, strokeWidth:2, listening:false }));
       S.layer.add(new Konva.Line({ points:[mx+7,my2-7,mx-7,my2+7], stroke:c, strokeWidth:2, listening:false }));
+      addHitLine([a.x,a.y,b.x,b.y]);
     }
     return;
   }
 
+  /* 커플 관계 */
+  const pts = [a.x, a.y, b.x, b.y];
   S.layer.add(new Konva.Line({
-    points:[a.x, a.y, b.x, b.y], stroke:col, strokeWidth:2,
-    dash: l.type==='cohabit' ? [7,5] : undefined, listening:false
+    points:pts, stroke:col, strokeWidth:2,
+    dash: (l.type==='cohabit') ? [7,5] : undefined, listening:false
   }));
+  addHitLine(pts);
+
+  const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
   const slashes = { separated:1, divorced:2 }[l.type] || 0;
   if(slashes){
-    const mx=(a.x+b.x)/2, my=(a.y+b.y)/2;
     for(let i=0;i<slashes;i++){
       const o = slashes===1 ? 0 : (i? 6 : -6);
       S.layer.add(new Konva.Line({
         points:[mx+o-6, my+9, mx+o+6, my-9], stroke:col, strokeWidth:2, listening:false }));
     }
   }
+  /* 재혼: 이혼 표시 + 화살표 */
+  if(l.type==='remarriage'){
+    S.layer.add(new Konva.Line({ points:[mx-6,my+9,mx+6,my-9], stroke:col, strokeWidth:2, listening:false }));
+    S.layer.add(new Konva.Line({ points:[mx,my+9,mx+12,my-3], stroke:col, strokeWidth:2, listening:false }));
+  }
+  addYearLabel(mx, my);
 }
 
 function drawNode(n){
   const g = new Konva.Group({ x:n.x, y:n.y, draggable:true });
   const col = nodeColor(n);
   const isSel = S.sel===n.id, isFrom = S.linkFrom===n.id;
+  const isMultiSel = S.selected.has(n.id);
   const sw = 2.4;
   const R = NW/2;
 
@@ -1478,13 +1584,14 @@ function drawNode(n){
     g.add(new Konva.Line({ points:[-R,-R, R,R], stroke:'#22332E', strokeWidth:2, listening:false }));
     g.add(new Konva.Line({ points:[R,-R, -R,R], stroke:'#22332E', strokeWidth:2, listening:false }));
   }
-  if(isSel || isFrom){
+  if(isSel || isFrom || isMultiSel){
+    const sc = isFrom ? '#C15B47' : isMultiSel ? '#C99A3A' : '#6FA292';
     g.add(new Konva.Rect({
       x:-R-9, y:-R-9, width:NW+18, height:NW+18, cornerRadius:8,
-      stroke: isFrom ? '#C15B47' : '#6FA292', strokeWidth:2, dash:[5,4], listening:false }));
+      stroke:sc, strokeWidth:2, dash:[5,4], listening:false }));
   }
 
-  /* 필수 #1: 나이를 아이콘 안에 표기, 캔버스에서 이름 제거 */
+  /* 나이를 아이콘 안에 */
   const age = n.birth ? (new Date().getFullYear() - parseInt(n.birth)) : null;
   const ageText = (age!==null && !isNaN(age) && n.alive!==false) ? String(age) : '';
   if(ageText){
@@ -1493,11 +1600,37 @@ function drawNode(n){
       text:ageText, fontSize:15, fontWeight:'bold', fontFamily:'Pretendard', fill:'#22332E', listening:false
     }));
   }
-  if(n.ip) g.add(new Konva.Text({
-    x:-60, y:R+7, width:120, align:'center',
-    text:'중심인물', fontSize:10, fontStyle:'700', fontFamily:'Pretendard', fill:'#4C7A6D', listening:false }));
 
+  /* 필드 표시 (displayFields 체크박스에 따라) */
+  let labelY = R + 6;
+  const df = n.displayFields || {};
+  if(n.ip){ g.add(new Konva.Text({ x:-60, y:labelY, width:120, align:'center', text:'중심인물', fontSize:10, fontStyle:'700', fontFamily:'Pretendard', fill:'#4C7A6D', listening:false })); labelY+=14; }
+  const fieldMap = [
+    ['name','이름'], ['relationship','관계'], ['education','학력'],
+    ['symptoms','증상'], ['support','지지도'], ['residence','거주지'],
+    ['family_history','가족력'], ['cause_of_death','사망원인']
+  ];
+  fieldMap.forEach(([key, label])=>{
+    if(df[key] && n[key]){
+      g.add(new Konva.Text({
+        x:-70, y:labelY, width:140, align:'center',
+        text: n[key].length > 12 ? n[key].slice(0,11)+'…' : n[key],
+        fontSize:10, fontFamily:'Pretendard', fill:'#5B6E67', listening:false
+      }));
+      labelY += 13;
+    }
+  });
+
+  /* 드래그 — 다중 선택 시 묶음 이동 */
   g.on('dragmove', ()=>{
+    if(S.tool==='select' && S.selected.has(n.id) && S.selected.size>1){
+      const dx = g.x() - n.x, dy = g.y() - n.y;
+      S.selected.forEach(sid=>{
+        if(sid===n.id) return;
+        const sn = S.geno.nodes[sid];
+        if(sn){ sn.x += dx; sn.y += dy; }
+      });
+    }
     n.x = Math.round(g.x()); n.y = Math.round(g.y());
     S.layer.destroyChildren();
     Object.values(S.geno.links).forEach(l=>{
@@ -1506,9 +1639,30 @@ function drawNode(n){
     Object.values(S.geno.nodes).forEach(drawNode);
     S.layer.draw();
   });
-  g.on('dragend', ()=> saveNodePos(n));   // 수정 #7: 좌표만 부분 저장
+  g.on('dragend', ()=>{
+    if(S.tool==='select' && S.selected.has(n.id) && S.selected.size>1){
+      S.selected.forEach(sid=>{
+        const sn = S.geno.nodes[sid]; if(sn) saveNodePos(sn);
+      });
+    } else { saveNodePos(n); }
+  });
   g.on('click tap', e=>{
     e.cancelBubble = true;
+    if(S.tool==='eraser'){
+      if(confirm(`이 인물(${n.name||'이름 없음'})과 연결된 관계선을 모두 삭제할까요?`)){
+        delNodeDirect(n.id);
+      }
+      return;
+    }
+    if(S.tool==='select'){
+      if(e.evt && e.evt.shiftKey){
+        if(S.selected.has(n.id)) S.selected.delete(n.id);
+        else S.selected.add(n.id);
+      } else {
+        S.selected.clear(); S.selected.add(n.id);
+      }
+      draw(); return;
+    }
     if(S.tool==='link'){
       if(!S.linkFrom){ S.linkFrom = n.id; hint('두 번째 인물을 탭하세요.'); draw(); }
       else if(S.linkFrom === n.id){ S.linkFrom = null; draw(); }
@@ -1620,6 +1774,15 @@ function openPerson(id){
     
     <div class="fld"><label>사례 기록</label>
       <textarea id="pMemo" class="inp" placeholder="기타 관찰 내용, 주요 사건 등">${esc(n.memo||'')}</textarea></div>
+
+    <div style="border-top:1px solid var(--line);margin:18px 0 14px;padding-top:14px;font-size:12.5px;font-weight:700;color:var(--ink-soft);">가계도에 표시할 항목</div>
+    <div style="display:flex;flex-wrap:wrap;gap:8px;" id="pDisplayFields">
+      ${[['name','이름'],['relationship','관계'],['education','학력'],['symptoms','증상'],['support','지지도'],['residence','거주지'],['family_history','가족력'],['cause_of_death','사망원인']].map(([k,lb])=>`
+        <label style="display:flex;align-items:center;gap:5px;font-size:12.5px;cursor:pointer;padding:6px 10px;border-radius:10px;border:1px solid var(--line);background:var(--white);">
+          <input type="checkbox" data-dk="${k}" ${(n.displayFields||{})[k]?'checked':''} style="accent-color:var(--sage-deep);"> ${lb}
+        </label>`).join('')}
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5;">체크한 항목이 가계도 아이콘 아래에 표시됩니다.</div>
     
     <div class="sheet-acts">
       <button class="btn ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="delNode('${id}')">삭제</button>
@@ -1651,7 +1814,14 @@ function savePerson(id){
   n.family_history= $('pFamilyHistory').value.trim();
   n.residence     = $('pResidence').value.trim();
   if($('pCauseOfDeath')) n.cause_of_death = $('pCauseOfDeath').value.trim();
-  n.updatedAt     = Date.now();  // 필수 #4: 수정일 갱신
+  n.updatedAt     = Date.now();
+  
+  // displayFields 체크박스 저장
+  const df = {};
+  $('pDisplayFields').querySelectorAll('input[type=checkbox]').forEach(cb=>{
+    if(cb.checked) df[cb.dataset.dk] = true;
+  });
+  n.displayFields = df;
   
   const st = {};
   $('pStatus').querySelectorAll('.stag.on').forEach(b=> st[b.dataset.k]=true);
@@ -1678,25 +1848,39 @@ function delNode(id){
   S.sel=null; draw(); closeSheet(); toast('삭제했습니다.');
 }
 
+/* 지우개에서 직접 삭제 (confirm은 drawNode에서 이미 함) */
+function delNodeDirect(id){
+  const upd = { ['nodes/'+id]: null };
+  delete S.geno.nodes[id];
+  Object.entries(S.geno.links).forEach(([lid,l])=>{
+    if(l.a===id || l.b===id){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
+  });
+  db.ref(genoPath()).update(upd).catch(errSave);
+  metaSave(); S.sel=null; draw(); toast('삭제했습니다.');
+}
+
 function openRelPicker(aId, bId){
   const a=S.geno.nodes[aId], b=S.geno.nodes[bId];
   const sym = {
-    marriage:  `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/></svg>`,
-    cohabit:   `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2" stroke-dasharray="6 4"/></svg>`,
-    separated: `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/><line x1="22" y1="3" x2="22" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 22 10)"/></svg>`,
-    divorced:  `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/><line x1="18" y1="3" x2="18" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 18 10)"/><line x1="26" y1="3" x2="26" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 26 10)"/></svg>`,
-    child:     `<svg width="44" height="20"><path d="M8 2 v8 h28 v8" fill="none" stroke="#22332E" stroke-width="2"/></svg>`,
-    adopted:   `<svg width="44" height="20"><path d="M8 2 v8 h28 v8" fill="none" stroke="#22332E" stroke-width="2" stroke-dasharray="5 3"/></svg>`,
-    close:     `<svg width="44" height="20"><line x1="2" y1="7" x2="42" y2="7" stroke="#4C7A6D" stroke-width="2"/><line x1="2" y1="13" x2="42" y2="13" stroke="#4C7A6D" stroke-width="2"/></svg>`,
-    conflict:  `<svg width="44" height="20"><path d="M2 10 l6-5 6 10 6-10 6 10 6-10 6 5" fill="none" stroke="#C15B47" stroke-width="2"/></svg>`,
-    cutoff:    `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#7A8B85" stroke-width="2" stroke-dasharray="8 6"/><line x1="17" y1="4" x2="27" y2="16" stroke="#7A8B85" stroke-width="2"/><line x1="27" y1="4" x2="17" y2="16" stroke="#7A8B85" stroke-width="2"/></svg>`
+    marriage:   `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/></svg>`,
+    cohabit:    `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2" stroke-dasharray="6 4"/></svg>`,
+    separated:  `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/><line x1="22" y1="3" x2="22" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 22 10)"/></svg>`,
+    divorced:   `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/><line x1="18" y1="3" x2="18" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 18 10)"/><line x1="26" y1="3" x2="26" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 26 10)"/></svg>`,
+    remarriage: `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#22332E" stroke-width="2"/><line x1="16" y1="3" x2="16" y2="17" stroke="#22332E" stroke-width="2" transform="rotate(20 16 10)"/><path d="M24 10l6-4v8z" fill="#22332E"/></svg>`,
+    child:      `<svg width="44" height="20"><path d="M8 2 v8 h28 v8" fill="none" stroke="#22332E" stroke-width="2"/></svg>`,
+    adopted:    `<svg width="44" height="20"><path d="M8 2 v8 h28 v8" fill="none" stroke="#22332E" stroke-width="2" stroke-dasharray="5 3"/></svg>`,
+    close:      `<svg width="44" height="20"><line x1="2" y1="7" x2="42" y2="7" stroke="#4C7A6D" stroke-width="2"/><line x1="2" y1="13" x2="42" y2="13" stroke="#4C7A6D" stroke-width="2"/></svg>`,
+    conflict:   `<svg width="44" height="20"><path d="M2 10 l6-5 6 10 6-10 6 10 6-10 6 5" fill="none" stroke="#C15B47" stroke-width="2"/></svg>`,
+    cutoff:     `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#7A8B85" stroke-width="2" stroke-dasharray="8 6"/><line x1="17" y1="4" x2="27" y2="16" stroke="#7A8B85" stroke-width="2"/><line x1="27" y1="4" x2="17" y2="16" stroke="#7A8B85" stroke-width="2"/></svg>`,
+    distant:    `<svg width="44" height="20"><line x1="2" y1="10" x2="42" y2="10" stroke="#8A6FA8" stroke-width="2" stroke-dasharray="3 5"/></svg>`,
+    complex:    `<svg width="44" height="20"><line x1="2" y1="6" x2="42" y2="6" stroke="#4C7A6D" stroke-width="1.5"/><path d="M2 14 l5-3 5 6 5-6 5 6 5-6 5 6 5-3" fill="none" stroke="#C15B47" stroke-width="1.5"/></svg>`
   };
   const group = (title, keys) => `
     <div style="font-size:12px;font-weight:700;color:var(--ink-soft);margin:14px 0 8px;">${title}</div>
     <div class="rel-list">
       ${keys.map(k=>`
-        <button class="rel-item" onclick="addLink('${aId}','${bId}','${k}')">
-          <span class="rl-sym">${sym[k]}</span>
+        <button class="rel-item" onclick="promptYear('${aId}','${bId}','${k}')">
+          <span class="rl-sym">${sym[k]||''}</span>
           <span><b>${RELS[k].label}</b><small>${RELS[k].desc}</small></span>
         </button>`).join('')}
     </div>`;
@@ -1704,26 +1888,99 @@ function openRelPicker(aId, bId){
     <h3>관계 설정</h3>
     <div class="sub"><b>${esc(a.name||'이름 없음')}</b> → <b>${esc(b.name||'이름 없음')}</b> 사이의 관계를 고르세요.<br>
       자녀·입양은 <b>앞사람이 부모</b>, 뒷사람이 자녀입니다.</div>
-    ${group('부부 · 커플', ['marriage','cohabit','separated','divorced'])}
+    ${group('부부 · 커플', ['marriage','cohabit','separated','divorced','remarriage'])}
     ${group('자녀', ['child','adopted'])}
-    ${group('정서적 관계', ['close','conflict','cutoff'])}
+    ${group('정서적 관계', ['close','conflict','cutoff','distant','complex'])}
+    <div id="yearPrompt" class="hide" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--line);">
+      <div class="row2">
+        <div class="fld"><label>시작 연도 (선택)</label>
+          <input id="rlYearStart" class="inp" type="number" inputmode="numeric" placeholder="예) 1998"></div>
+        <div class="fld"><label>종료 연도 (선택)</label>
+          <input id="rlYearEnd" class="inp" type="number" inputmode="numeric" placeholder="예) 2015"></div>
+      </div>
+      <button class="btn" id="rlConfirm">관계 추가하기</button>
+    </div>
   `);
 }
-function addLink(a,b,type){
+/* 관계 선택 → 연도 입력란 표시 → 확인 시 추가 */
+let _pendingRel = {};
+function promptYear(a,b,type){
+  _pendingRel = {a,b,type};
+  $('yearPrompt').classList.remove('hide');
+  $('rlYearStart').value = '';
+  $('rlYearEnd').value = '';
+  $('rlConfirm').onclick = ()=>{
+    const ys = $('rlYearStart').value.trim();
+    const ye = $('rlYearEnd').value.trim();
+    addLink(a,b,type, ys||'', ye||'');
+  };
+  $('yearPrompt').scrollIntoView({behavior:'smooth'});
+}
+
+function addLink(a,b,type, yearStart, yearEnd){
   const kind = RELS[type].kind;
   const upd = {};
-  Object.entries(S.geno.links).forEach(([lid,l])=>{
-    const same = (l.a===a&&l.b===b) || (l.a===b&&l.b===a);
-    if(same && RELS[l.type].kind===kind){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
-  });
+  /* 같은 종류의 기존 관계 제거 (재혼은 여러 개 허용) */
+  if(type!=='remarriage'){
+    Object.entries(S.geno.links).forEach(([lid,l])=>{
+      const same = (l.a===a&&l.b===b) || (l.a===b&&l.b===a);
+      if(same && RELS[l.type]?.kind===kind){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
+    });
+  }
   const id = uid();
   const link = { id, a, b, type };
+  if(yearStart) link.yearStart = yearStart;
+  if(yearEnd) link.yearEnd = yearEnd;
   S.geno.links[id] = link;
   upd['links/'+id] = link;
-  db.ref(genoPath()).update(upd).catch(errSave);   // 수정 #7: 링크 단위 저장
+  db.ref(genoPath()).update(upd).catch(errSave);
   metaSave();
   S.linkFrom=null; draw(); closeSheet();
   toast(`${RELS[type].label} 관계를 연결했습니다.`);
+}
+
+/* 관계선 클릭 시 수정/삭제 시트 */
+function openLinkEdit(lid){
+  const l = S.geno.links[lid]; if(!l) return;
+  const a = S.geno.nodes[l.a], b = S.geno.nodes[l.b];
+  const def = RELS[l.type] || { label:'관계', desc:'' };
+  openSheet(`
+    <h3>관계 수정</h3>
+    <div class="sub">
+      <b>${esc(a?.name||'이름 없음')}</b> ↔ <b>${esc(b?.name||'이름 없음')}</b><br>
+      현재: <b>${def.label}</b> (${def.desc})
+    </div>
+    <div class="fld"><label>관계 유형 변경</label>
+      <select id="leType" class="inp">
+        ${Object.entries(RELS).map(([k,v])=>`<option value="${k}" ${k===l.type?'selected':''}>${v.label} — ${v.desc}</option>`).join('')}
+      </select></div>
+    <div class="row2">
+      <div class="fld"><label>시작 연도</label>
+        <input id="leYearStart" class="inp" type="number" inputmode="numeric" value="${esc(l.yearStart||'')}" placeholder="1998"></div>
+      <div class="fld"><label>종료 연도</label>
+        <input id="leYearEnd" class="inp" type="number" inputmode="numeric" value="${esc(l.yearEnd||'')}" placeholder="2015"></div>
+    </div>
+    <div class="sheet-acts">
+      <button class="btn ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="delLink('${lid}')">삭제</button>
+      <button class="btn" onclick="saveLinkEdit('${lid}')">저장하기</button>
+    </div>
+  `);
+}
+function saveLinkEdit(lid){
+  const l = S.geno.links[lid]; if(!l) return;
+  l.type = $('leType').value;
+  const ys = $('leYearStart').value.trim();
+  const ye = $('leYearEnd').value.trim();
+  if(ys) l.yearStart = ys; else delete l.yearStart;
+  if(ye) l.yearEnd = ye; else delete l.yearEnd;
+  db.ref(genoPath()+'/links/'+lid).set(l).catch(errSave);
+  metaSave(); draw(); closeSheet(); toast('관계를 수정했습니다.');
+}
+function delLink(lid){
+  if(!confirm('이 관계선을 삭제할까요?')) return;
+  delete S.geno.links[lid];
+  db.ref(genoPath()+'/links/'+lid).remove().catch(errSave);
+  metaSave(); draw(); closeSheet(); toast('관계선을 삭제했습니다.');
 }
 
 /* ── 메타(썸네일·요약) 저장 — 디바운스 ── */
