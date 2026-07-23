@@ -654,7 +654,16 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
       <button class="tool" id="tlSelect" onclick="setTool('select')">
         <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M5 3l2 16 4-5 5 2L5 3z" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linejoin="round"/></svg></span>선택
       </button>
-      <button class="tool on" id="tlMale" onclick="setTool('male')">
+      <button class="tool" id="tlEraser" onclick="setTool('eraser')">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M3 16l6-12h4l6 12" fill="none" stroke="#C15B47" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="6" y1="10" x2="16" y2="10" stroke="#C15B47" stroke-width="1.8"/><line x1="3" y1="16" x2="19" y2="16" stroke="#C15B47" stroke-width="1.8" stroke-linecap="round"/></svg></span>지우개
+      </button>
+      <button class="tool" id="tlPan" onclick="setTool('pan')">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 3v16M3 11h16" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round"/><path d="M8 6l3-3 3 3M8 16l3 3 3-3M6 8l-3 3 3 3M16 8l3 3-3 3" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>이동
+      </button>
+      <button class="tool" id="tlLink" onclick="setTool('link')">
+        <span class="sym"><svg width="26" height="22" viewBox="0 0 26 22"><rect x="2" y="8" width="7" height="7" fill="none" stroke="#5B6E67" stroke-width="1.8"/><circle cx="20.5" cy="11.5" r="4" fill="none" stroke="#5B6E67" stroke-width="1.8"/><line x1="9" y1="11.5" x2="16.5" y2="11.5" stroke="#5B6E67" stroke-width="1.8"/></svg></span>관계선
+      </button>
+      <button class="tool" id="tlMale" onclick="setTool('male')">
         <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><rect x="4" y="4" width="14" height="14" fill="none" stroke="#5B6E67" stroke-width="2"/></svg></span>남성
       </button>
       <button class="tool" id="tlFemale" onclick="setTool('female')">
@@ -662,15 +671,6 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
       </button>
       <button class="tool" id="tlUnknown" onclick="setTool('unknown')">
         <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 3l8 8-8 8-8-8z" fill="none" stroke="#5B6E67" stroke-width="2" stroke-linejoin="round"/></svg></span>미상
-      </button>
-      <button class="tool" id="tlLink" onclick="setTool('link')">
-        <span class="sym"><svg width="26" height="22" viewBox="0 0 26 22"><rect x="2" y="8" width="7" height="7" fill="none" stroke="#5B6E67" stroke-width="1.8"/><circle cx="20.5" cy="11.5" r="4" fill="none" stroke="#5B6E67" stroke-width="1.8"/><line x1="9" y1="11.5" x2="16.5" y2="11.5" stroke="#5B6E67" stroke-width="1.8"/></svg></span>관계선
-      </button>
-      <button class="tool" id="tlEraser" onclick="setTool('eraser')">
-        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M3 16l6-12h4l6 12" fill="none" stroke="#C15B47" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><line x1="6" y1="10" x2="16" y2="10" stroke="#C15B47" stroke-width="1.8"/><line x1="3" y1="16" x2="19" y2="16" stroke="#C15B47" stroke-width="1.8" stroke-linecap="round"/></svg></span>지우개
-      </button>
-      <button class="tool" id="tlPan" onclick="setTool('pan')">
-        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 3v16M3 11h16" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round"/><path d="M8 6l3-3 3 3M8 16l3 3 3-3M6 8l-3 3 3 3M16 8l3 3-3 3" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>이동
       </button>
     </div>
   </div>
@@ -716,8 +716,9 @@ const S = {
   allCases:{},                 // 기관 전체 (관리자 패널용)
   cases:{},                    // 내가 열람 가능한 것
   caseId:null, geno:{nodes:{},links:{}},
-  tool:'male', sel:null, linkFrom:null,
+  tool:'', sel:null, linkFrom:null,
   selected: new Set(),         // 다중 선택된 노드 ID
+  nodeGroups: {},              // 노드ID → Konva Group 참조 (드래그용)
   stage:null, layer:null,
   pinBuf:'', pinMode:'verify',
   tab:'cases'
@@ -1296,7 +1297,7 @@ async function openCanvas(id){
   S.geno.links = S.geno.links || {};
 
   buildStage();
-  setTool('male');            // 수정 #4: 스테이지 생성 후 도구 설정
+  setTool('');            // 기본값: 아무 도구도 선택 안 됨
   draw();
   fitView();
   if(!Object.keys(S.geno.nodes).length) hint('빈 캔버스를 탭하면 인물이 추가됩니다.');
@@ -1371,8 +1372,10 @@ function setTool(t){
   else if(t==='pan') hint('드래그해서 화면을 이동합니다.');
   else if(t==='eraser') hint('삭제할 인물이나 관계선을 탭하세요.');
   else if(t==='select') hint('인물을 탭해 선택하세요. Shift+탭으로 다중 선택.');
+  else if(t==='') hint('');
   else hintOff();
   if(t!=='select') S.selected.clear();
+  hintOff();
   draw();
 }
 let hintTimer;
@@ -1406,6 +1409,7 @@ function nodeColor(n){
 function draw(){
   if(!S.layer) return;
   S.layer.destroyChildren();
+  S.nodeGroups = {};
   Object.values(S.geno.links).forEach(l=>{
     const a = S.geno.nodes[l.a], b = S.geno.nodes[l.b];
     if(a && b) drawLink(l, a, b);
@@ -1621,29 +1625,40 @@ function drawNode(n){
     }
   });
 
-  /* 드래그 — 다중 선택 시 묶음 이동 */
+  /* 드래그 — 다중 선택 시 묶음 이동 (리드로 없이 직접 위치 변경) */
   g.on('dragmove', ()=>{
+    const dx = g.x() - n.x, dy = g.y() - n.y;
+    n.x = Math.round(g.x()); n.y = Math.round(g.y());
+
     if(S.tool==='select' && S.selected.has(n.id) && S.selected.size>1){
-      const dx = g.x() - n.x, dy = g.y() - n.y;
+      /* 다중 선택: 다른 노드 그룹을 직접 이동 (전체 리드로 하지 않음) */
       S.selected.forEach(sid=>{
         if(sid===n.id) return;
         const sn = S.geno.nodes[sid];
-        if(sn){ sn.x += dx; sn.y += dy; }
+        if(sn){
+          sn.x += dx; sn.y += dy;
+          const sg = S.nodeGroups[sid];
+          if(sg) sg.position({x:sn.x, y:sn.y});
+        }
       });
+      S.layer.batchDraw();
+    } else {
+      /* 단일 노드: 기존 방식 전체 리드로 */
+      S.layer.destroyChildren();
+      S.nodeGroups = {};
+      Object.values(S.geno.links).forEach(l=>{
+        const a=S.geno.nodes[l.a], b=S.geno.nodes[l.b]; if(a&&b) drawLink(l,a,b);
+      });
+      Object.values(S.geno.nodes).forEach(drawNode);
+      S.layer.draw();
     }
-    n.x = Math.round(g.x()); n.y = Math.round(g.y());
-    S.layer.destroyChildren();
-    Object.values(S.geno.links).forEach(l=>{
-      const a=S.geno.nodes[l.a], b=S.geno.nodes[l.b]; if(a&&b) drawLink(l,a,b);
-    });
-    Object.values(S.geno.nodes).forEach(drawNode);
-    S.layer.draw();
   });
   g.on('dragend', ()=>{
     if(S.tool==='select' && S.selected.has(n.id) && S.selected.size>1){
       S.selected.forEach(sid=>{
         const sn = S.geno.nodes[sid]; if(sn) saveNodePos(sn);
       });
+      draw(); /* dragend 시 관계선 포함 전체 리드로 */
     } else { saveNodePos(n); }
   });
   g.on('click tap', e=>{
@@ -1673,6 +1688,7 @@ function drawNode(n){
   });
 
   S.layer.add(g);
+  S.nodeGroups[n.id] = g;
 }
 
 function zoomBy(f){
