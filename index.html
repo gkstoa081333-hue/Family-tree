@@ -717,6 +717,7 @@ const S = {
   cases:{},                    // 내가 열람 가능한 것
   caseId:null, geno:{nodes:{},links:{}},
   tool:'', sel:null, linkFrom:null,
+  childMode:null,              // {parentId, type, yearStart, yearEnd} — 자녀 연속 등록 모드
   selected: new Set(),         // 다중 선택된 노드 ID
   nodeGroups: {},              // 노드ID → Konva Group 참조 (드래그용)
   stage:null, layer:null,
@@ -990,6 +991,12 @@ function buildPad(){
     pad.appendChild(b);
   });
 }
+/* 키보드 숫자키·백스페이스로 PIN 입력 */
+document.addEventListener('keydown', e=>{
+  if(!$('viewPin') || $('viewPin').classList.contains('hide')) return;
+  if(e.key >= '0' && e.key <= '9') pinAdd(e.key);
+  else if(e.key === 'Backspace') pinDel();
+});
 function paintDots(){
   [...$('pinDots').children].forEach((d,i)=> d.classList.toggle('on', i < S.pinBuf.length));
 }
@@ -1362,7 +1369,7 @@ function resizeStage(){
 }
 
 function setTool(t){
-  S.tool = t; S.linkFrom = null;
+  S.tool = t; S.linkFrom = null; S.childMode = null;
   ['select','male','female','unknown','link','eraser','pan'].forEach(k=>{
     const el = $('tl'+k[0].toUpperCase()+k.slice(1));
     if(el) el.classList.toggle('on', k===t);
@@ -1672,6 +1679,16 @@ function drawNode(n){
       draw(); return;
     }
     if(S.tool==='link'){
+      /* 자녀 연속 등록 모드 중이면 바로 자녀 추가 */
+      if(S.childMode && n.id !== S.childMode.parentId){
+        addChildDirect(n.id);
+        return;
+      }
+      if(S.childMode && n.id === S.childMode.parentId){
+        /* 부모를 다시 탭하면 연속 모드 종료 */
+        S.childMode = null; S.linkFrom = null;
+        hint('연속 등록을 마쳤습니다.'); draw(); return;
+      }
       if(!S.linkFrom){ S.linkFrom = n.id; hint('두 번째 인물을 탭하세요.'); draw(); }
       else if(S.linkFrom === n.id){ S.linkFrom = null; draw(); }
       else { openRelPicker(S.linkFrom, n.id); }
@@ -1929,8 +1946,8 @@ function promptYear(a,b,type){
 function addLink(a,b,type, yearStart, yearEnd){
   const kind = RELS[type].kind;
   const upd = {};
-  /* 같은 종류의 기존 관계 제거 (재혼은 여러 개 허용) */
-  if(type!=='remarriage'){
+  /* 같은 종류의 기존 관계 제거 (재혼은 여러 개 허용, 자녀도 여러 개 허용) */
+  if(type!=='remarriage' && kind!=='child'){
     Object.entries(S.geno.links).forEach(([lid,l])=>{
       const same = (l.a===a&&l.b===b) || (l.a===b&&l.b===a);
       if(same && RELS[l.type]?.kind===kind){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
@@ -1944,8 +1961,42 @@ function addLink(a,b,type, yearStart, yearEnd){
   upd['links/'+id] = link;
   db.ref(genoPath()).update(upd).catch(errSave);
   metaSave();
-  S.linkFrom=null; draw(); closeSheet();
+
+  /* 자녀·입양 관계면 연속 등록 모드 진입 */
+  if(kind==='child'){
+    S.childMode = { parentId:a, type, yearStart:yearStart||'', yearEnd:yearEnd||'' };
+    S.linkFrom = a;   // 부모 선택 유지
+    draw(); closeSheet();
+    const parentName = S.geno.nodes[a]?.name || '이름 없음';
+    toast(`${RELS[type].label} 연결 완료`);
+    hint(`다음 자녀를 탭하세요 · ${parentName}(부모) 탭하면 종료`);
+    return;
+  }
+
+  S.linkFrom=null; S.childMode=null; draw(); closeSheet();
   toast(`${RELS[type].label} 관계를 연결했습니다.`);
+}
+
+/* 자녀 연속 등록 — 관계 피커 없이 바로 추가 */
+function addChildDirect(childId){
+  const cm = S.childMode; if(!cm) return;
+  const parentId = cm.parentId;
+  /* 이미 같은 부모-자녀 관계가 있으면 스킵 */
+  const dup = Object.values(S.geno.links).find(l=>
+    l.a===parentId && l.b===childId && (l.type==='child'||l.type==='adopted'));
+  if(dup){ toast('이미 연결된 자녀입니다.'); return; }
+
+  const id = uid();
+  const link = { id, a:parentId, b:childId, type:cm.type };
+  if(cm.yearStart) link.yearStart = cm.yearStart;
+  if(cm.yearEnd) link.yearEnd = cm.yearEnd;
+  S.geno.links[id] = link;
+  db.ref(genoPath()+'/links/'+id).set(link).catch(errSave);
+  metaSave(); draw();
+
+  const childName = S.geno.nodes[childId]?.name || '이름 없음';
+  toast(`${childName} → ${RELS[cm.type].label} 연결`);
+  hint(`다음 자녀를 탭하세요 · 부모 탭하면 종료`);
 }
 
 /* 관계선 클릭 시 수정/삭제 시트 */
