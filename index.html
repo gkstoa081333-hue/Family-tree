@@ -1625,13 +1625,12 @@ function drawNode(n){
     }
   });
 
-  /* 드래그 — 다중 선택 시 묶음 이동 (리드로 없이 직접 위치 변경) */
+  /* 드래그 — 이동 중 리드로 없음 (성능 최적화), 놓을 때만 전체 갱신 */
   g.on('dragmove', ()=>{
     const dx = g.x() - n.x, dy = g.y() - n.y;
     n.x = Math.round(g.x()); n.y = Math.round(g.y());
 
     if(S.tool==='select' && S.selected.has(n.id) && S.selected.size>1){
-      /* 다중 선택: 다른 노드 그룹을 직접 이동 (전체 리드로 하지 않음) */
       S.selected.forEach(sid=>{
         if(sid===n.id) return;
         const sn = S.geno.nodes[sid];
@@ -1641,25 +1640,19 @@ function drawNode(n){
           if(sg) sg.position({x:sn.x, y:sn.y});
         }
       });
-      S.layer.batchDraw();
-    } else {
-      /* 단일 노드: 기존 방식 전체 리드로 */
-      S.layer.destroyChildren();
-      S.nodeGroups = {};
-      Object.values(S.geno.links).forEach(l=>{
-        const a=S.geno.nodes[l.a], b=S.geno.nodes[l.b]; if(a&&b) drawLink(l,a,b);
-      });
-      Object.values(S.geno.nodes).forEach(drawNode);
-      S.layer.draw();
     }
+    /* 리드로 하지 않음 — Konva가 그룹 이동만 처리 */
   });
   g.on('dragend', ()=>{
+    n.x = Math.round(g.x()); n.y = Math.round(g.y());
     if(S.tool==='select' && S.selected.has(n.id) && S.selected.size>1){
       S.selected.forEach(sid=>{
         const sn = S.geno.nodes[sid]; if(sn) saveNodePos(sn);
       });
-      draw(); /* dragend 시 관계선 포함 전체 리드로 */
-    } else { saveNodePos(n); }
+    } else {
+      saveNodePos(n);
+    }
+    draw(); /* 놓을 때 관계선 포함 전체 갱신 */
   });
   g.on('click tap', e=>{
     e.cancelBubble = true;
