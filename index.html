@@ -1434,12 +1434,132 @@ function draw(){
   if(!S.layer) return;
   S.layer.destroyChildren();
   S.nodeGroups = {};
+  const childLinks = [];
   Object.values(S.geno.links).forEach(l=>{
     const a = S.geno.nodes[l.a], b = S.geno.nodes[l.b];
-    if(a && b) drawLink(l, a, b);
+    if(!a || !b) return;
+    const def = RELS[l.type];
+    if(def && def.kind==='child') childLinks.push(l);
+    else drawLink(l, a, b);
   });
+  drawChildStructures(childLinks);
   Object.values(S.geno.nodes).forEach(drawNode);
   S.layer.draw();
+}
+
+/* ═══ 자녀선 — 커플 중앙 + 형제 수평선 구조 ═══ */
+function findCouplePartner(parentId){
+  for(const l of Object.values(S.geno.links)){
+    const def = RELS[l.type];
+    if(!def || def.kind!=='couple') continue;
+    if(l.a===parentId) return l.b;
+    if(l.b===parentId) return l.a;
+  }
+  return null;
+}
+
+function drawChildStructures(childLinks){
+  if(!childLinks.length) return;
+  const R = NW/2;
+  const isEraser = S.tool==='eraser';
+
+  /* 자녀 히트 영역 (클릭으로 수정/삭제) */
+  function addChildHit(link, pts){
+    const hit = new Konva.Line({
+      points:pts, stroke:'transparent', strokeWidth:14, listening:true
+    });
+    hit.on('click tap', e=>{
+      e.cancelBubble = true;
+      if(isEraser){
+        if(confirm(`${RELS[link.type]?.label||'관계'} 관계선을 삭제할까요?`)){
+          delete S.geno.links[link.id];
+          db.ref(genoPath()+'/links/'+link.id).remove().catch(errSave);
+          metaSave(); draw(); toast('관계선을 삭제했습니다.');
+        }
+      } else { openLinkEdit(link.id); }
+    });
+    S.layer.add(hit);
+  }
+
+  /* 커플 단위로 자녀 그룹핑 */
+  const groups = {};
+  childLinks.forEach(l=>{
+    const partnerId = findCouplePartner(l.a);
+    /* 키: 커플이면 두 ID를 정렬하여 합침 / 한부모면 solo|부모ID */
+    const key = partnerId ? [l.a, partnerId].sort().join('|') : 'solo|'+l.a;
+    if(!groups[key]) groups[key] = { parentId:l.a, partnerId, items:[] };
+    groups[key].items.push(l);
+  });
+
+  Object.values(groups).forEach(g=>{
+    const p1 = S.geno.nodes[g.parentId];
+    const p2 = g.partnerId ? S.geno.nodes[g.partnerId] : null;
+    if(!p1) return;
+
+    /* 앵커: 커플 중앙 / 한부모면 부모 좌표 */
+    const ax = p2 ? (p1.x + p2.x)/2 : p1.x;
+    const ay = p2 ? Math.max(p1.y, p2.y) : p1.y;
+    const topY = ay + R + 6;
+
+    /* 자녀 노드 수집 + 좌→우 정렬 */
+    const kids = g.items
+      .map(l=>({ link:l, node:S.geno.nodes[l.b] }))
+      .filter(k=>k.node)
+      .sort((a,b)=> a.node.x - b.node.x);
+    if(!kids.length) return;
+
+    /* 형제 수평선 Y = 부모 하단과 최상위 자녀 상단의 중간 */
+    const childTopY = Math.min(...kids.map(k=> k.node.y - R - 6));
+    const barY = Math.round((topY + childTopY) / 2);
+
+    /* ① 커플 중앙 → 수평선까지 수직 드롭 */
+    S.layer.add(new Konva.Line({
+      points:[ax, topY, ax, barY],
+      stroke:'#22332E', strokeWidth:2, listening:false
+    }));
+
+    if(kids.length===1){
+      /* 자녀 1명: 엘보선 (수직→수평→수직) */
+      const k = kids[0];
+      const dash = k.link.type==='adopted' ? [6,4] : undefined;
+      const cy = k.node.y - R - 6;
+      if(Math.abs(k.node.x - ax) < 3){
+        /* 바로 아래 — 직선 */
+        S.layer.add(new Konva.Line({
+          points:[ax, barY, ax, cy], stroke:'#22332E', strokeWidth:2, dash, listening:false
+        }));
+      } else {
+        /* 좌우 오프셋 — 꺾은선 */
+        S.layer.add(new Konva.Line({
+          points:[ax, barY, k.node.x, barY, k.node.x, cy],
+          stroke:'#22332E', strokeWidth:2, dash, listening:false
+        }));
+      }
+      addChildHit(k.link, [ax, topY, k.node.x, k.node.y]);
+
+    } else {
+      /* 자녀 2명 이상: 수평 형제선 + 각 자녀로 수직 드롭 */
+      const leftX  = Math.min(ax, kids[0].node.x);
+      const rightX = Math.max(ax, kids[kids.length-1].node.x);
+
+      /* ② 수평 형제선 */
+      S.layer.add(new Konva.Line({
+        points:[leftX, barY, rightX, barY],
+        stroke:'#22332E', strokeWidth:2, listening:false
+      }));
+
+      /* ③ 각 자녀로 수직 드롭 */
+      kids.forEach(k=>{
+        const dash = k.link.type==='adopted' ? [6,4] : undefined;
+        const cy = k.node.y - R - 6;
+        S.layer.add(new Konva.Line({
+          points:[k.node.x, barY, k.node.x, cy],
+          stroke:'#22332E', strokeWidth:2, dash, listening:false
+        }));
+        addChildHit(k.link, [ax, topY, k.node.x, k.node.y]);
+      });
+    }
+  });
 }
 
 function drawLink(l, a, b){
@@ -1479,20 +1599,8 @@ function drawLink(l, a, b){
     }));
   }
 
-  if(def.kind==='child'){
-    const dir = b.y >= a.y ? 1 : -1;
-    /* 자녀선 개선: 부모 하단 → 중간 수평 → 자녀 상단 (여유값 조정) */
-    const parentY = a.y + dir*(NW/2 + 4);
-    const childY  = b.y - dir*(NW/2 + 4);
-    const midY = (parentY + childY) / 2;
-    const pts = [a.x, parentY, a.x, midY, b.x, midY, b.x, childY];
-    S.layer.add(new Konva.Line({
-      points:pts, stroke:col, strokeWidth:2,
-      dash: l.type==='adopted' ? [6,4] : undefined, listening:false
-    }));
-    addHitLine(pts);
-    return;
-  }
+  /* child 링크는 draw()에서 drawChildStructures로 처리 — 여기서 스킵 */
+  if(def.kind==='child') return;
 
   if(def.kind==='emo'){
     const emoColors = {
