@@ -1485,7 +1485,6 @@ function drawChildStructures(childLinks){
   const groups = {};
   childLinks.forEach(l=>{
     const partnerId = findCouplePartner(l.a);
-    /* 키: 커플이면 두 ID를 정렬하여 합침 / 한부모면 solo|부모ID */
     const key = partnerId ? [l.a, partnerId].sort().join('|') : 'solo|'+l.a;
     if(!groups[key]) groups[key] = { parentId:l.a, partnerId, items:[] };
     groups[key].items.push(l);
@@ -1496,10 +1495,15 @@ function drawChildStructures(childLinks){
     const p2 = g.partnerId ? S.geno.nodes[g.partnerId] : null;
     if(!p1) return;
 
-    /* 앵커: 커플 중앙 / 한부모면 부모 좌표 */
+    /* 앵커 X: 커플 중앙 / 한부모면 부모 X */
     const ax = p2 ? (p1.x + p2.x)/2 : p1.x;
-    const ay = p2 ? Math.max(p1.y, p2.y) : p1.y;
-    const topY = ay + R + 6;
+
+    /* 드롭 시작 Y: 커플선이 지나는 Y (부모 중심)
+       — 노드(흰색 fill)가 나중에 그려져 겹침 부분을 자연스럽게 가림 */
+    const coupleY = p2 ? (p1.y + p2.y)/2 : p1.y;
+
+    /* 부모 아이콘 하단 (실제로 보이기 시작하는 지점) */
+    const visibleStartY = (p2 ? Math.max(p1.y, p2.y) : p1.y) + R;
 
     /* 자녀 노드 수집 + 좌→우 정렬 */
     const kids = g.items
@@ -1509,36 +1513,33 @@ function drawChildStructures(childLinks){
     if(!kids.length) return;
 
     /* 형제 수평선 Y = 부모 하단과 최상위 자녀 상단의 중간 */
-    const childTopY = Math.min(...kids.map(k=> k.node.y - R - 6));
-    const barY = Math.round((topY + childTopY) / 2);
+    const nearestChildTop = Math.min(...kids.map(k=> k.node.y - R));
+    const barY = Math.round((visibleStartY + nearestChildTop) / 2);
 
-    /* ① 커플 중앙 → 수평선까지 수직 드롭 */
+    /* ① 커플 중앙 → 수평선까지 수직 드롭 (coupleY에서 시작 = 커플선과 연결) */
     S.layer.add(new Konva.Line({
-      points:[ax, topY, ax, barY],
+      points:[ax, coupleY, ax, barY],
       stroke:'#22332E', strokeWidth:2, listening:false
     }));
 
     if(kids.length===1){
-      /* 자녀 1명: 엘보선 (수직→수평→수직) */
       const k = kids[0];
       const dash = k.link.type==='adopted' ? [6,4] : undefined;
-      const cy = k.node.y - R - 6;
+      /* 자녀 아이콘 상단에서 끝남 (child.y - R, 갭 없음) */
+      const cy = k.node.y - R;
       if(Math.abs(k.node.x - ax) < 3){
-        /* 바로 아래 — 직선 */
         S.layer.add(new Konva.Line({
           points:[ax, barY, ax, cy], stroke:'#22332E', strokeWidth:2, dash, listening:false
         }));
       } else {
-        /* 좌우 오프셋 — 꺾은선 */
         S.layer.add(new Konva.Line({
           points:[ax, barY, k.node.x, barY, k.node.x, cy],
           stroke:'#22332E', strokeWidth:2, dash, listening:false
         }));
       }
-      addChildHit(k.link, [ax, topY, k.node.x, k.node.y]);
+      addChildHit(k.link, [ax, coupleY, k.node.x, k.node.y]);
 
     } else {
-      /* 자녀 2명 이상: 수평 형제선 + 각 자녀로 수직 드롭 */
       const leftX  = Math.min(ax, kids[0].node.x);
       const rightX = Math.max(ax, kids[kids.length-1].node.x);
 
@@ -1548,15 +1549,15 @@ function drawChildStructures(childLinks){
         stroke:'#22332E', strokeWidth:2, listening:false
       }));
 
-      /* ③ 각 자녀로 수직 드롭 */
+      /* ③ 각 자녀로 수직 드롭 — 자녀 아이콘 상단에서 끝남 */
       kids.forEach(k=>{
         const dash = k.link.type==='adopted' ? [6,4] : undefined;
-        const cy = k.node.y - R - 6;
+        const cy = k.node.y - R;
         S.layer.add(new Konva.Line({
           points:[k.node.x, barY, k.node.x, cy],
           stroke:'#22332E', strokeWidth:2, dash, listening:false
         }));
-        addChildHit(k.link, [ax, topY, k.node.x, k.node.y]);
+        addChildHit(k.link, [ax, coupleY, k.node.x, k.node.y]);
       });
     }
   });
