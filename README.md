@@ -1,0 +1,14 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# 에디터
+.vscode/
+.idea/
+*.swp
+
+# 로그·임시
+*.log
+node_modules/
+.netlify/
+.cache/
