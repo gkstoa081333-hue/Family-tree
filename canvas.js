@@ -71,11 +71,9 @@ function buildStage(){
 
   S.stage.on('click tap', e=>{
     if(e.target !== S.stage) return;
-    if(!['male','female','unknown'].includes(S.tool)){
-      S.sel=null; S.linkFrom=null; draw(); return;
-    }
-    const p = S.stage.getPointerPosition(), s = S.stage.scaleX();
-    addNode(S.tool, (p.x-S.stage.x())/s, (p.y-S.stage.y())/s);
+    // 도형 도구로 캔버스를 탭해 노드를 만드는 방식은 제거됨.
+    // 인물 추가는 상단 '인물 추가' 버튼 또는 기존 인물 우클릭으로만 수행.
+    S.sel=null; S.linkFrom=null; draw();
   });
 
   /* [이식] 캔버스 빈 곳 우클릭 → 브라우저 메뉴 대신 컨텍스트 메뉴 닫기 */
@@ -87,6 +85,11 @@ function buildStage(){
   /* [이식] 캔버스 진입 시 히스토리 초기화(현재 상태를 기준점으로) */
   genoHistory = []; genoHistIndex = -1;
   pushHistory();
+
+  /* 빈 캔버스면 시작 방법 안내 */
+  if(Object.keys(S.geno.nodes||{}).length === 0){
+    hint("상단 '인물 추가' 버튼으로 첫 인물을 놓고, 인물을 우클릭해 가족을 늘리세요.");
+  }
 }
 function resizeStage(){
   if(!S.stage) return;
@@ -96,7 +99,7 @@ function resizeStage(){
 
 function setTool(t){
   S.tool = t; S.linkFrom = null; S.childMode = null;
-  ['select','male','female','unknown','link','eraser','pan'].forEach(k=>{
+  ['select','link','eraser','pan'].forEach(k=>{
     const el = $('tl'+k[0].toUpperCase()+k.slice(1));
     if(el) el.classList.toggle('on', k===t);
   });
@@ -131,8 +134,38 @@ function addNode(gender, x, y){
   };
   S.geno.nodes[id] = n;
   saveNode(n); draw();
-  openPerson(id);
+  if(typeof openInfoCard==='function') openInfoCard(id); else openPerson(id);
 }
+
+/* [이식] 상단 '인물 추가' 버튼 — 화면 중앙에 인물을 놓는다.
+   빈 캔버스일 때 시작점을 만들고, 이후 가족 확장은 인물 우클릭으로 수행한다. */
+function addPersonCenter(){
+  if(!S.stage){ return; }
+  // 현재 보이는 화면의 중앙을 캔버스 좌표로 환산
+  const s = S.stage.scaleX();
+  const cx = (S.stage.width()/2  - S.stage.x()) / s;
+  const cy = (S.stage.height()/2 - S.stage.y()) / s;
+  // 이미 노드가 있으면 겹치지 않게 약간 어긋나게 배치
+  const count = Object.keys(S.geno.nodes).length;
+  const ox = count>0 ? (count%5)*40 - 80 : 0;
+  const oy = count>0 ? Math.floor(count/5)*40 : 0;
+  const isFirst = count === 0;
+  const id = uid();
+  const now = Date.now();
+  const n = {
+    id, gender:'male', x:Math.round(cx+ox), y:Math.round(cy+oy),
+    name:'', birth:'', alive:true, status:{}, ip:isFirst, memo:'',
+    education:'', relationship:'', symptoms:'', support:'', family_history:'', residence:'', cause_of_death:'',
+    createdAt:now, updatedAt:now
+  };
+  S.geno.nodes[id] = n;
+  saveNode(n); draw();
+  toast(isFirst ? '중심인물을 추가했어요. 우클릭으로 가족을 늘리세요' : '인물을 추가했어요');
+  // 팝업 카드를 화면 중앙 근처에 띄운다
+  if(typeof ctxLastXY!=='undefined'){ ctxLastXY = {x: window.innerWidth/2 - 140, y: 140}; }
+  if(typeof openInfoCard==='function') openInfoCard(id); else openPerson(id);
+}
+
 function nodeColor(n){
   const on = Object.keys(n.status||{}).filter(k=>n.status[k]);
   return on.length ? STATUS[on[0]].color : '#22332E';
@@ -529,14 +562,18 @@ function drawNode(n){
       else { openRelPicker(S.linkFrom, n.id); }
       return;
     }
-    S.sel = n.id; draw(); openPerson(n.id);
+    /* 클릭/탭은 선택만. 정보 입력·가족 추가 등은 우클릭 메뉴로만 수행 */
+    S.sel = n.id; draw();
   });
 
   /* [이식] 데스크톱 우클릭 → 방사형 메뉴 */
   g.on('contextmenu', e=>{
     e.evt.preventDefault();
     e.cancelBubble = true;
-    S.sel = n.id; draw();
+    if(e.evt.stopPropagation) e.evt.stopPropagation();
+    /* draw()를 호출하면 이 노드 그룹이 파괴되어 메뉴 좌표가 꼬이므로,
+       선택 값만 갱신하고 즉시 메뉴를 띄운다 (재렌더는 메뉴 동작 시 수행) */
+    S.sel = n.id;
     showCtxMenu(n.id, e.evt.clientX, e.evt.clientY);
   });
 

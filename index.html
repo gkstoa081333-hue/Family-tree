@@ -311,14 +311,8 @@
       <button class="tool" id="tlLink" onclick="setTool('link')">
         <span class="sym"><svg width="26" height="22" viewBox="0 0 26 22"><rect x="2" y="8" width="7" height="7" fill="none" stroke="#5B6E67" stroke-width="1.8"/><circle cx="20.5" cy="11.5" r="4" fill="none" stroke="#5B6E67" stroke-width="1.8"/><line x1="9" y1="11.5" x2="16.5" y2="11.5" stroke="#5B6E67" stroke-width="1.8"/></svg></span>관계선
       </button>
-      <button class="tool" id="tlMale" onclick="setTool('male')">
-        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><rect x="4" y="4" width="14" height="14" fill="none" stroke="#5B6E67" stroke-width="2"/></svg></span>남성
-      </button>
-      <button class="tool" id="tlFemale" onclick="setTool('female')">
-        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="11" r="7.5" fill="none" stroke="#5B6E67" stroke-width="2"/></svg></span>여성
-      </button>
-      <button class="tool" id="tlUnknown" onclick="setTool('unknown')">
-        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M11 3l8 8-8 8-8-8z" fill="none" stroke="#5B6E67" stroke-width="2" stroke-linejoin="round"/></svg></span>미상
+      <button class="tool" id="tlAddPerson" onclick="addPersonCenter()">
+        <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><circle cx="11" cy="7.5" r="4" fill="none" stroke="#4C7A6D" stroke-width="2"/><path d="M4 19c0-3.5 3-6 7-6s7 2.5 7 6" fill="none" stroke="#4C7A6D" stroke-width="2" stroke-linecap="round"/></svg></span>인물 추가
       </button>
       <button class="tool" id="btnUndo" onclick="genoUndo()" disabled>
         <span class="sym"><svg width="22" height="22" viewBox="0 0 22 22"><path d="M8 6L3 11l5 5M3 11h10a6 6 0 010 0" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 11h9a6 6 0 016 6" fill="none" stroke="#5B6E67" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></span>실행취소

@@ -24,7 +24,7 @@ function quickAddRelative(baseId, kind){
   if(kind==='spouse'){
     const nid = addNodeSilent(p.gender==='female'?'male':'female', p.x+GAP_X, p.y);
     addLink(baseId, nid, 'marriage');
-    afterQuickAdd(); openPerson(nid);
+    afterQuickAdd(); openInfoCard(nid);
   } else if(kind==='child'){
     const partnerId = findCouplePartner(baseId);
     const existing = Object.values(S.geno.links).filter(l=>
@@ -34,7 +34,7 @@ function quickAddRelative(baseId, kind){
     const nid = addNodeSilent('unknown', cx, p.y+GAP_Y+20);
     addLink(baseId, nid, 'child');  // addLink가 child모드로 들어가므로 아래서 정리
     S.childMode=null; S.linkFrom=null;
-    afterQuickAdd(); openPerson(nid);
+    afterQuickAdd(); openInfoCard(nid);
   } else if(kind==='parent'){
     const parentCount = Object.values(S.geno.links).filter(l=>
       RELS[l.type]?.kind==='child' && l.b===baseId).length;
@@ -48,7 +48,7 @@ function quickAddRelative(baseId, kind){
         RELS[l.type]?.kind==='child' && l.b===baseId && l.a!==nid);
       if(first) addLink(first.a, nid, 'marriage');
     }
-    afterQuickAdd(); openPerson(nid);
+    afterQuickAdd(); openInfoCard(nid);
   } else if(kind==='sibling'){
     const parentLinks = Object.values(S.geno.links).filter(l=>
       RELS[l.type]?.kind==='child' && l.b===baseId);
@@ -57,7 +57,7 @@ function quickAddRelative(baseId, kind){
       RELS[l.type]?.kind==='child' && l.a===parentLinks[0].a).length;
     const nid = addNodeSilent('unknown', p.x + GAP_X*(sibCount>0?1:1), p.y);
     parentLinks.forEach(pl=>{ addLink(pl.a, nid, 'child'); S.childMode=null; S.linkFrom=null; });
-    afterQuickAdd(); openPerson(nid);
+    afterQuickAdd(); openInfoCard(nid);
   }
 }
 function afterQuickAdd(){
@@ -71,19 +71,33 @@ function ensureCtxMenu(){
   if($('ctxMenu')) return;
   const m = document.createElement('div');
   m.id = 'ctxMenu';
-  m.style.cssText = 'position:fixed;z-index:9999;display:none;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(30,50,40,.18);padding:6px;min-width:180px;';
+  m.style.cssText = 'position:fixed;z-index:9999;display:none;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(30,50,40,.18);padding:6px;min-width:210px;max-height:86vh;overflow-y:auto;';
   m.innerHTML = `
+    <div class="ctx-h">가족 추가</div>
     <button data-a="spouse">＋ 배우자</button>
     <button data-a="child">＋ 자녀</button>
     <button data-a="parent">＋ 부모</button>
     <button data-a="sibling">＋ 형제자매</button>
-    <div style="border-top:1px solid var(--line);margin:4px 0;"></div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-h">관계</div>
     <button data-a="link">🔗 관계선 긋기</button>
-    <button data-a="info">정보 입력 / 수정</button>
-    <div style="border-top:1px solid var(--line);margin:4px 0;"></div>
-    <button data-a="delete" style="color:var(--danger);">이 인물 삭제</button>`;
+    <div class="ctx-sep"></div>
+    <div class="ctx-h">정보 입력</div>
+    <button data-a="info">👤 인물 정보 입력 / 수정</button>
+    <button data-a="info-status">🎨 상태 코딩 (질환·치료 등)</button>
+    <button data-a="info-health">🩺 건강 & 지지 (증상·가족력)</button>
+    <div class="ctx-sep"></div>
+    <button data-a="delete" style="color:var(--danger);">🗑 이 인물 삭제</button>`;
+
+  // 헤더/구분선 스타일
+  m.querySelectorAll('.ctx-h').forEach(h=>{
+    h.style.cssText='font-size:11px;font-weight:700;color:var(--muted,#8AA);padding:6px 11px 3px;letter-spacing:.2px;';
+  });
+  m.querySelectorAll('.ctx-sep').forEach(s=>{
+    s.style.cssText='border-top:1px solid var(--line);margin:5px 0;';
+  });
   m.querySelectorAll('button').forEach(b=>{
-    b.style.cssText='display:block;width:100%;text-align:left;background:none;border:none;padding:9px 11px;font-size:14px;border-radius:7px;color:var(--ink);';
+    b.style.cssText='display:block;width:100%;text-align:left;background:none;border:none;padding:8px 11px;font-size:13.5px;border-radius:7px;color:var(--ink);cursor:pointer;white-space:nowrap;';
     b.onmouseenter=()=> b.style.background='var(--sage-bg)';
     b.onmouseleave=()=> b.style.background='none';
   });
@@ -94,18 +108,158 @@ function ensureCtxMenu(){
     const a = btn.dataset.a;
     if(['spouse','child','parent','sibling'].includes(a)) quickAddRelative(ctxTarget, a);
     else if(a==='link'){ S.tool='link'; S.linkFrom=ctxTarget; hint('관계를 이을 상대 인물을 클릭하세요'); draw(); }
-    else if(a==='info') openPerson(ctxTarget);
+    else if(a==='info') openInfoCard(ctxTarget);
+    else if(a && a.startsWith('info-')) openInfoCard(ctxTarget, a.slice(5));
     else if(a==='delete'){ if(confirm('이 인물과 연결된 관계선을 모두 삭제할까요?')) delNodeDirect(ctxTarget); }
     hideCtxMenu();
   });
 }
+
+/* ══════════════════════════════════════════════════════════
+   [신규] 작은 정보 팝업 카드 — 큰 사이드시트 대신 우클릭 자리 옆에 뜬다
+   ══════════════════════════════════════════════════════════ */
+let infoCardTarget = null;
+function ensureInfoCard(){
+  if($('infoCard')) return;
+  const c = document.createElement('div');
+  c.id = 'infoCard';
+  c.style.cssText = 'position:fixed;z-index:10000;display:none;background:#fff;border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(30,50,40,.22);padding:14px;width:290px;max-height:88vh;overflow-y:auto;font-family:inherit;';
+  document.body.appendChild(c);
+  // 카드 안을 클릭해도 바깥클릭 닫기가 발동하지 않도록
+  c.addEventListener('mousedown', e=> e.stopPropagation());
+}
+function openInfoCard(id, section){
+  ensureInfoCard();
+  hideCtxMenu();
+  infoCardTarget = id;
+  const n = S.geno.nodes[id]; if(!n) return;
+  const c = $('infoCard');
+
+  const seg = (name, val, opts)=> `<div class="ic-seg" data-seg="${name}">`+
+    opts.map(o=>`<button type="button" data-v="${o.v}" class="${String(val)===String(o.v)?'on':''}">${o.t}</button>`).join('')+`</div>`;
+
+  const statusBtns = Object.entries(STATUS).map(([k,v])=>
+    `<button type="button" class="ic-stag ${n.status?.[k]?'on':''}" data-k="${k}" style="${n.status?.[k]?`color:${v.color};background:${v.color}18;border-color:${v.color};`:''}"><i style="background:${v.color}"></i>${v.label}</button>`
+  ).join('');
+
+  c.innerHTML = `
+    <div class="ic-title">인물 정보</div>
+    <div class="ic-f"><label>이름</label>
+      <input id="icName" value="${esc(n.name||'')}" placeholder="예) 김○수"></div>
+    <div class="ic-f"><label>성별</label>
+      ${seg('gender', n.gender, [{v:'male',t:'■ 남'},{v:'female',t:'● 여'},{v:'unknown',t:'◆ 미상'}])}</div>
+    <div class="ic-row">
+      <div class="ic-f"><label>출생연도</label>
+        <input id="icBirth" type="number" inputmode="numeric" value="${esc(n.birth||'')}" placeholder="1975"></div>
+      <div class="ic-f"><label>생존</label>
+        ${seg('alive', n.alive!==false?1:0, [{v:1,t:'생존'},{v:0,t:'사망'}])}</div>
+    </div>
+    <div class="ic-f"><label>상태 코딩 (복수 선택)</label>
+      <div class="ic-tags" id="icStatus">${statusBtns}</div></div>
+    <div class="ic-f"><label>중심인물(IP)</label>
+      ${seg('ip', n.ip?1:0, [{v:0,t:'아니오'},{v:1,t:'중심인물'}])}</div>
+
+    <details class="ic-more"><summary>추가 정보 (학력·거주지·증상 등)</summary>
+      <div class="ic-f"><label>학력</label><input id="icEducation" value="${esc(n.education||'')}" placeholder="고졸, 대졸 등"></div>
+      <div class="ic-f"><label>가족 내 역할</label><input id="icRelationship" value="${esc(n.relationship||'')}" placeholder="장녀, 막내 등"></div>
+      <div class="ic-f"><label>거주지</label><input id="icResidence" value="${esc(n.residence||'')}" placeholder="공주시 등"></div>
+      <div class="ic-f"><label>주요 증상</label><textarea id="icSymptoms" rows="2" placeholder="우울, 불안 등">${esc(n.symptoms||'')}</textarea></div>
+      <div class="ic-f"><label>지지도</label><input id="icSupport" value="${esc(n.support||'')}" placeholder="낮음/중간/높음"></div>
+      <div class="ic-f"><label>가족력</label><textarea id="icFamily" rows="2" placeholder="정신질환, 물질사용 등">${esc(n.family_history||'')}</textarea></div>
+      <div class="ic-f ic-death" style="display:${n.alive===false?'block':'none'}"><label>사망원인</label><input id="icCause" value="${esc(n.cause_of_death||'')}" placeholder="질병, 사고 등"></div>
+      <div class="ic-f"><label>사례 기록 메모</label><textarea id="icMemo" rows="2" placeholder="기타 관찰 내용">${esc(n.memo||'')}</textarea></div>
+    </details>
+
+    <div class="ic-acts">
+      <button type="button" class="ic-cancel" onclick="closeInfoCard()">닫기</button>
+      <button type="button" class="ic-save" onclick="saveInfoCard()">저장</button>
+    </div>`;
+
+  bindInfoCard(c);
+  // 위치: 우클릭 자리 옆. 화면 밖 넘침 보정
+  c.style.display='block';
+  const cw=c.offsetWidth, ch=c.offsetHeight;
+  let x=(ctxLastXY.x||120)+6, y=(ctxLastXY.y||120);
+  if(x+cw > window.innerWidth-8)  x = Math.max(8, window.innerWidth - cw - 8);
+  if(y+ch > window.innerHeight-8) y = Math.max(8, window.innerHeight - ch - 8);
+  c.style.left=x+'px'; c.style.top=y+'px';
+  setTimeout(()=> document.addEventListener('mousedown', infoCardOutside), 0);
+
+  // 특정 섹션 요청 시 해당 위치로 스크롤/포커스
+  if(section){
+    const anchor={basic:'icName',status:'icStatus',detail:'icEducation',health:'icSymptoms',memo:'icMemo',display:null}[section];
+    if(anchor==='icEducation'||anchor==='icSymptoms'||anchor==='icMemo'){
+      const det=c.querySelector('.ic-more'); if(det) det.open=true;
+    }
+    setTimeout(()=>{ const el=$(anchor); if(el){ el.scrollIntoView({block:'center'}); if(el.focus)el.focus(); } }, 60);
+  } else {
+    setTimeout(()=>{ const el=$('icName'); if(el) el.focus(); }, 60);
+  }
+}
+function bindInfoCard(c){
+  // 세그먼트 토글
+  c.querySelectorAll('.ic-seg').forEach(seg=>{
+    seg.querySelectorAll('button').forEach(b=>{
+      b.onclick=()=>{ seg.querySelectorAll('button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+        if(seg.dataset.seg==='alive'){ const d=c.querySelector('.ic-death'); if(d) d.style.display = b.dataset.v==='0'?'block':'none'; }
+      };
+    });
+  });
+  // 상태코딩 토글
+  c.querySelectorAll('.ic-stag').forEach(b=>{
+    b.onclick=()=>{ const k=b.dataset.k, col=STATUS[k].color, on=b.classList.toggle('on');
+      b.style.cssText = on?`color:${col};background:${col}18;border-color:${col};`:''; };
+  });
+}
+function icSegVal(name){
+  const seg=$('infoCard').querySelector(`.ic-seg[data-seg="${name}"] button.on`);
+  return seg?seg.dataset.v:null;
+}
+function saveInfoCard(){
+  const id=infoCardTarget, n=S.geno.nodes[id]; if(!n) return;
+  n.name=$('icName').value.trim();
+  n.gender=icSegVal('gender')||n.gender;
+  n.birth=$('icBirth').value.trim();
+  n.alive=icSegVal('alive')==='1';
+  n.ip=icSegVal('ip')==='1';
+  n.education=$('icEducation').value.trim();
+  n.relationship=$('icRelationship').value.trim();
+  n.residence=$('icResidence').value.trim();
+  n.symptoms=$('icSymptoms').value.trim();
+  n.support=$('icSupport').value.trim();
+  n.family_history=$('icFamily').value.trim();
+  if($('icCause')) n.cause_of_death=$('icCause').value.trim();
+  n.memo=$('icMemo').value.trim();
+  const st={}; $('infoCard').querySelectorAll('.ic-stag.on').forEach(b=> st[b.dataset.k]=true); n.status=st;
+  n.updatedAt=Date.now();
+  const upd={['nodes/'+id]:n};
+  if(n.ip) Object.values(S.geno.nodes).forEach(o=>{ if(o.id!==id && o.ip){ o.ip=false; upd['nodes/'+o.id+'/ip']=false; }});
+  db.ref(genoPath()).update(upd).catch(errSave);
+  metaSave(); draw(); closeInfoCard(); toast('저장했습니다.');
+}
+function closeInfoCard(){
+  const c=$('infoCard'); if(c) c.style.display='none';
+  document.removeEventListener('mousedown', infoCardOutside);
+  infoCardTarget=null;
+}
+function infoCardOutside(e){
+  const c=$('infoCard'); if(c && !c.contains(e.target)) closeInfoCard();
+}
 function showCtxMenu(nodeId, clientX, clientY){
   ensureCtxMenu();
   ctxTarget = nodeId;
+  ctxLastXY = {x:clientX, y:clientY};  // 정보 팝업을 이 자리에 띄우기 위해 기억
   const m = $('ctxMenu');
-  m.style.left = clientX+'px'; m.style.top = clientY+'px'; m.style.display='block';
+  m.style.display='block';
+  // 먼저 표시한 뒤 실제 크기를 재서 화면 밖으로 넘치면 위치 보정
+  const mw = m.offsetWidth, mh = m.offsetHeight;
+  let x = clientX, y = clientY;
+  if(x + mw > window.innerWidth - 8)  x = window.innerWidth - mw - 8;
+  if(y + mh > window.innerHeight - 8) y = Math.max(8, window.innerHeight - mh - 8);
+  m.style.left = x+'px'; m.style.top = y+'px';
   setTimeout(()=> document.addEventListener('mousedown', ctxOutside), 0);
 }
+let ctxLastXY = {x:120, y:120};
 function hideCtxMenu(){
   const m = $('ctxMenu'); if(m) m.style.display='none';
   document.removeEventListener('mousedown', ctxOutside);

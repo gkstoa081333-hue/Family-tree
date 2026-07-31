@@ -357,3 +357,43 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
 }
 .fab-txt{display:none;}
 .cv-main{flex:1;display:flex;flex-direction:column;position:relative;min-width:0;min-height:0;}
+
+/* ═══════════════════════════════════════════════
+   [신규] 작은 정보 팝업 카드 (큰 사이드시트 대체)
+   ═══════════════════════════════════════════════ */
+#infoCard .ic-title{ font-size:14px; font-weight:800; color:var(--ink); margin-bottom:10px; }
+#infoCard .ic-f{ margin-bottom:9px; }
+#infoCard .ic-f > label{ display:block; font-size:11px; color:var(--ink-soft); margin-bottom:4px; font-weight:600; }
+#infoCard .ic-row{ display:flex; gap:8px; }
+#infoCard .ic-row .ic-f{ flex:1; }
+#infoCard input, #infoCard textarea{
+  width:100%; padding:7px 9px; border:1px solid var(--line); border-radius:9px;
+  font-size:13px; font-family:inherit; background:var(--white); color:var(--ink); box-sizing:border-box;
+}
+#infoCard textarea{ resize:vertical; }
+#infoCard input:focus, #infoCard textarea:focus{ outline:none; border-color:var(--sage-mid); }
+#infoCard .ic-seg{ display:flex; gap:4px; }
+#infoCard .ic-seg button{
+  flex:1; padding:7px 4px; border:1px solid var(--line); border-radius:9px;
+  background:var(--white); color:var(--ink-soft); font-size:12px; cursor:pointer; font-family:inherit;
+}
+#infoCard .ic-seg button.on{ background:var(--sage-deep); color:#fff; border-color:var(--sage-deep); font-weight:700; }
+#infoCard .ic-tags{ display:flex; flex-wrap:wrap; gap:5px; }
+#infoCard .ic-stag{
+  display:inline-flex; align-items:center; gap:5px; padding:5px 9px;
+  border:1px solid var(--line); border-radius:14px; background:var(--white);
+  font-size:11.5px; cursor:pointer; color:var(--ink-soft); font-family:inherit;
+}
+#infoCard .ic-stag i{ width:8px; height:8px; border-radius:50%; display:inline-block; }
+#infoCard .ic-more{ margin:6px 0 2px; }
+#infoCard .ic-more > summary{
+  cursor:pointer; font-size:12px; color:var(--sage-deep); font-weight:700;
+  padding:6px 0; list-style:none; user-select:none;
+}
+#infoCard .ic-more > summary::-webkit-details-marker{ display:none; }
+#infoCard .ic-more > summary::before{ content:'▸ '; }
+#infoCard .ic-more[open] > summary::before{ content:'▾ '; }
+#infoCard .ic-acts{ display:flex; gap:8px; margin-top:12px; }
+#infoCard .ic-acts button{ flex:1; padding:9px; border-radius:10px; font-size:13px; font-weight:700; cursor:pointer; font-family:inherit; border:1px solid var(--line); }
+#infoCard .ic-cancel{ background:var(--white); color:var(--ink-soft); }
+#infoCard .ic-save{ background:var(--sage-deep); color:#fff; border-color:var(--sage-deep); }
