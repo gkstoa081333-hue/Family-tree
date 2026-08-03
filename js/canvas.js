@@ -206,18 +206,16 @@ function drawHouseholds(){
       x:(minX+maxX)/2, y:(minY+maxY)/2,
       radiusX:(maxX-minX)/2, radiusY:(maxY-minY)/2,
       stroke:'#22332E', strokeWidth:1.6, dash:[7,6],
-      listening: S.tool==='eraser'
+      listening:true
     });
-    if(S.tool==='eraser'){
-      ell.on('click tap', e=>{
-        e.cancelBubble = true;
-        if(confirm('이 동거가족 표시를 삭제할까요?')){
-          delete S.geno.households[h.id];
-          db.ref(genoPath()+'/households/'+h.id).remove().catch(errSave);
-          metaSave(); draw(); toast('동거가족 표시를 삭제했습니다.');
-        }
-      });
-    }
+    ell.on('click tap', e=>{
+      e.cancelBubble = true;
+      if(confirm('이 동거가족 표시를 삭제할까요?')){
+        delete S.geno.households[h.id];
+        db.ref(genoPath()+'/households/'+h.id).remove().catch(errSave);
+        metaSave(); draw(); toast('동거가족 표시를 삭제했습니다.');
+      }
+    });
     S.layer.add(ell);
   });
 }
