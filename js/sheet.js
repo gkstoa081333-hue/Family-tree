@@ -148,6 +148,12 @@ function delNode(id){
   Object.entries(S.geno.links).forEach(([lid,l])=>{
     if(l.a===id || l.b===id){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
   });
+  Object.entries(S.geno.households||{}).forEach(([hid,h])=>{
+    if(!h.members.includes(id)) return;
+    h.members = h.members.filter(m=>m!==id);
+    if(h.members.length<2){ delete S.geno.households[hid]; upd['households/'+hid]=null; }
+    else upd['households/'+hid+'/members']=h.members;
+  });
   db.ref(genoPath()).update(upd).catch(errSave);
   metaSave();
   S.sel=null; draw(); closeSheet(); toast('삭제했습니다.');
@@ -159,6 +165,12 @@ function delNodeDirect(id){
   delete S.geno.nodes[id];
   Object.entries(S.geno.links).forEach(([lid,l])=>{
     if(l.a===id || l.b===id){ delete S.geno.links[lid]; upd['links/'+lid]=null; }
+  });
+  Object.entries(S.geno.households||{}).forEach(([hid,h])=>{
+    if(!h.members.includes(id)) return;
+    h.members = h.members.filter(m=>m!==id);
+    if(h.members.length<2){ delete S.geno.households[hid]; upd['households/'+hid]=null; }
+    else upd['households/'+hid+'/members']=h.members;
   });
   db.ref(genoPath()).update(upd).catch(errSave);
   metaSave(); S.sel=null; draw(); toast('삭제했습니다.');

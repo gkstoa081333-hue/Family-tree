@@ -18,6 +18,7 @@ async function openCanvas(id){
   S.geno = snap.val() || { nodes:{}, links:{} };
   S.geno.nodes = S.geno.nodes || {};
   S.geno.links = S.geno.links || {};
+  S.geno.households = S.geno.households || {};
 
   buildStage();
   setTool('');            // 기본값: 아무 도구도 선택 안 됨
@@ -71,6 +72,7 @@ function buildStage(){
 
   S.stage.on('click tap', e=>{
     if(e.target !== S.stage) return;
+    if(S.tool==='household'){ finishHouseholdDraft(); return; }
     // 도형 도구로 캔버스를 탭해 노드를 만드는 방식은 제거됨.
     // 인물 추가는 상단 '인물 추가' 버튼 또는 기존 인물 우클릭으로만 수행.
     S.sel=null; S.linkFrom=null; draw();
@@ -99,7 +101,7 @@ function resizeStage(){
 
 function setTool(t){
   S.tool = t; S.linkFrom = null; S.childMode = null;
-  ['select','link','eraser','pan'].forEach(k=>{
+  ['select','link','eraser','pan','household'].forEach(k=>{
     const el = $('tl'+k[0].toUpperCase()+k.slice(1));
     if(el) el.classList.toggle('on', k===t);
   });
@@ -108,9 +110,11 @@ function setTool(t){
   else if(t==='pan') hint('드래그해서 화면을 이동합니다.');
   else if(t==='eraser') hint('삭제할 인물이나 관계선을 탭하세요.');
   else if(t==='select') hint('인물을 탭해 선택하세요. Shift+탭으로 다중 선택.');
+  else if(t==='household') hint('동거가족으로 묶을 인물들을 순서대로 탭하세요. 완료하려면 버튼을 다시 누르세요.');
   else if(t==='') hint('');
   else hintOff();
   if(t!=='select') S.selected.clear();
+  if(t!=='household') S.householdDraft = null;
   hintOff();
   draw();
 }
@@ -176,6 +180,7 @@ function draw(){
   if(!S.layer) return;
   S.layer.destroyChildren();
   S.nodeGroups = {};
+  drawHouseholds();
   const childLinks = [];
   Object.values(S.geno.links).forEach(l=>{
     const a = S.geno.nodes[l.a], b = S.geno.nodes[l.b];
@@ -187,6 +192,34 @@ function draw(){
   drawChildStructures(childLinks);
   Object.values(S.geno.nodes).forEach(drawNode);
   S.layer.draw();
+}
+
+/* ═══ 동거가족 표시 — 점선 타원으로 인물 묶음 표시 ═══ */
+function drawHouseholds(){
+  const PAD = NW/2 + 22;
+  Object.values(S.geno.households||{}).forEach(h=>{
+    const members = (h.members||[]).map(id=>S.geno.nodes[id]).filter(Boolean);
+    if(members.length < 2) return;
+    const minX=Math.min(...members.map(n=>n.x))-PAD, maxX=Math.max(...members.map(n=>n.x))+PAD;
+    const minY=Math.min(...members.map(n=>n.y))-PAD, maxY=Math.max(...members.map(n=>n.y))+PAD;
+    const ell = new Konva.Ellipse({
+      x:(minX+maxX)/2, y:(minY+maxY)/2,
+      radiusX:(maxX-minX)/2, radiusY:(maxY-minY)/2,
+      stroke:'#22332E', strokeWidth:1.6, dash:[7,6],
+      listening: S.tool==='eraser'
+    });
+    if(S.tool==='eraser'){
+      ell.on('click tap', e=>{
+        e.cancelBubble = true;
+        if(confirm('이 동거가족 표시를 삭제할까요?')){
+          delete S.geno.households[h.id];
+          db.ref(genoPath()+'/households/'+h.id).remove().catch(errSave);
+          metaSave(); draw(); toast('동거가족 표시를 삭제했습니다.');
+        }
+      });
+    }
+    S.layer.add(ell);
+  });
 }
 
 /* ═══ 자녀선 — 커플 중앙 + 형제 수평선 구조 ═══ */
@@ -433,6 +466,7 @@ function drawNode(n){
   const col = nodeColor(n);
   const isSel = S.sel===n.id, isFrom = S.linkFrom===n.id;
   const isMultiSel = S.selected.has(n.id);
+  const isHouseholdPick = !!(S.householdDraft && S.householdDraft.has(n.id));
   const sw = 2.4;
   const R = NW/2;
 
@@ -463,8 +497,8 @@ function drawNode(n){
     g.add(new Konva.Line({ points:[-R,-R, R,R], stroke:'#22332E', strokeWidth:2, listening:false }));
     g.add(new Konva.Line({ points:[R,-R, -R,R], stroke:'#22332E', strokeWidth:2, listening:false }));
   }
-  if(isSel || isFrom || isMultiSel){
-    const sc = isFrom ? '#C15B47' : isMultiSel ? '#C99A3A' : '#6FA292';
+  if(isSel || isFrom || isMultiSel || isHouseholdPick){
+    const sc = isFrom ? '#C15B47' : isHouseholdPick ? '#8A6FA8' : isMultiSel ? '#C99A3A' : '#6FA292';
     g.add(new Konva.Rect({
       x:-R-9, y:-R-9, width:NW+18, height:NW+18, cornerRadius:8,
       stroke:sc, strokeWidth:2, dash:[5,4], listening:false }));
@@ -545,6 +579,13 @@ function drawNode(n){
         S.selected.clear(); S.selected.add(n.id);
       }
       draw(); return;
+    }
+    if(S.tool==='household'){
+      if(!S.householdDraft) S.householdDraft = new Set();
+      if(S.householdDraft.has(n.id)) S.householdDraft.delete(n.id);
+      else S.householdDraft.add(n.id);
+      draw();
+      return;
     }
     if(S.tool==='link'){
       /* 자녀 연속 등록 모드 중이면 바로 자녀 추가 */

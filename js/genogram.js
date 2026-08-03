@@ -65,6 +65,27 @@ function afterQuickAdd(){
   metaSave(); draw();  // metaSave 안에서 pushHistory 자동 호출됨
 }
 
+/* 동거가족표시 도구: 순서대로 탭한 인물을 모아뒀다가, 버튼을 다시 누르면 묶는다 */
+function toggleHouseholdTool(){
+  if(S.tool==='household'){ finishHouseholdDraft(); return; }
+  S.householdDraft = new Set();
+  setTool('household');
+}
+function finishHouseholdDraft(){
+  const members = [...(S.householdDraft||[])];
+  if(members.length>=2){
+    const id = uid();
+    const h = { id, members };
+    S.geno.households[id] = h;
+    db.ref(genoPath()+'/households/'+id).set(h).catch(errSave);
+    metaSave();
+    toast('동거가족으로 묶었습니다.');
+  } else {
+    toast('2명 이상 선택해야 동거가족으로 묶을 수 있어요.');
+  }
+  setTool('');
+}
+
 /* ── 우클릭 방사형(컨텍스트) 메뉴 ── */
 let ctxTarget = null;
 function ensureCtxMenu(){
@@ -81,6 +102,7 @@ function ensureCtxMenu(){
     <div class="ctx-sep"></div>
     <div class="ctx-h">관계</div>
     <button data-a="link">🔗 관계선 긋기</button>
+    <button data-a="household">⬭ 동거가족표시</button>
     <div class="ctx-sep"></div>
     <div class="ctx-h">정보 입력</div>
     <button data-a="info">👤 인물 정보 입력 / 수정</button>
@@ -108,6 +130,10 @@ function ensureCtxMenu(){
     const a = btn.dataset.a;
     if(['spouse','child','parent','sibling'].includes(a)) quickAddRelative(ctxTarget, a);
     else if(a==='link'){ S.tool='link'; S.linkFrom=ctxTarget; hint('관계를 이을 상대 인물을 클릭하세요'); draw(); }
+    else if(a==='household'){
+      S.householdDraft = new Set([ctxTarget]);
+      setTool('household');
+    }
     else if(a==='info') openInfoCard(ctxTarget);
     else if(a && a.startsWith('info-')) openInfoCard(ctxTarget, a.slice(5));
     else if(a==='delete'){ if(confirm('이 인물과 연결된 관계선을 모두 삭제할까요?')) delNodeDirect(ctxTarget); }
@@ -271,7 +297,7 @@ function ctxOutside(e){
 /* ── Undo / Redo (스냅샷 방식) ── */
 let genoHistory = [], genoHistIndex = -1, genoRestoring = false;
 const GENO_MAX_HIST = 40;
-function genoSnapshot(){ return JSON.stringify({nodes:S.geno.nodes, links:S.geno.links}); }
+function genoSnapshot(){ return JSON.stringify({nodes:S.geno.nodes, links:S.geno.links, households:S.geno.households}); }
 function pushHistory(){
   if(genoRestoring) return;
   genoHistory = genoHistory.slice(0, genoHistIndex+1);
@@ -283,9 +309,9 @@ function pushHistory(){
 function restoreHistory(snapStr){
   genoRestoring = true;
   const snap = JSON.parse(snapStr);
-  S.geno.nodes = snap.nodes||{}; S.geno.links = snap.links||{};
+  S.geno.nodes = snap.nodes||{}; S.geno.links = snap.links||{}; S.geno.households = snap.households||{};
   // Firebase에 전체 덮어쓰기 (수동저장 철학과 동일하게 즉시 반영)
-  db.ref(genoPath()).update({ nodes:S.geno.nodes, links:S.geno.links }).catch(errSave);
+  db.ref(genoPath()).update({ nodes:S.geno.nodes, links:S.geno.links, households:S.geno.households }).catch(errSave);
   metaSave(); draw();
   genoRestoring = false;
   updateUndoButtons();

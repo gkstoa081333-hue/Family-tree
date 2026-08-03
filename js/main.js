@@ -13,6 +13,7 @@ document.addEventListener('keydown', e=>{
   const tag = document.activeElement.tagName;
   if(tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT') return;
 
+  if(e.key==='Enter' && S.tool==='household'){ e.preventDefault(); finishHouseholdDraft(); return; }
   if((e.ctrlKey||e.metaKey) && !e.shiftKey && e.key.toLowerCase()==='z'){ e.preventDefault(); genoUndo(); return; }
   if((e.ctrlKey||e.metaKey) && (e.shiftKey && e.key.toLowerCase()==='z' || e.key.toLowerCase()==='y')){ e.preventDefault(); genoRedo(); return; }
 
