@@ -25,6 +25,7 @@ async function openCanvas(id){
   draw();
   fitView();
   if(!Object.keys(S.geno.nodes).length) hint('빈 캔버스를 탭하면 인물이 추가됩니다.');
+  maybeShowTutorial();
 }
 function closeCanvas(){
   if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; }
@@ -121,6 +122,30 @@ function setTool(t){
 let hintTimer;
 function hint(m){ const h=$('cvHint'); h.textContent=m; h.classList.remove('hide'); clearTimeout(hintTimer); hintTimer=setTimeout(hintOff,3200); }
 function hintOff(){ $('cvHint').classList.add('hide'); }
+
+/* ── 사용 설명 팝업 (하루 단위로 "오늘은 보지 않기") ── */
+function maybeShowTutorial(){
+  const today = new Date().toISOString().slice(0,10);
+  if(localStorage.getItem('genoTutorialSkip') === today) return;
+  openSheet(`
+    <h3>사용 설명</h3>
+    <div class="sub">가계도는 우클릭으로 조작합니다.</div>
+    <p style="font-size:13px;color:var(--ink-soft);line-height:1.7;margin:0 0 16px;">
+      상단 '인물 추가' 버튼으로 첫 인물을 놓고, <b>인물을 우클릭</b>하면 가족 추가·관계선·삭제 메뉴가 열립니다.<br>
+      빈 곳을 우클릭하면 메뉴가 닫힙니다.
+    </p>
+    <label style="display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink-soft);margin-bottom:14px;">
+      <input type="checkbox" id="tutSkipToday" style="accent-color:var(--sage-deep);"> 오늘 하루 보지 않기
+    </label>
+    <div class="sheet-acts">
+      <button class="btn" onclick="closeTutorial()">확인</button>
+    </div>
+  `);
+}
+function closeTutorial(){
+  if($('tutSkipToday')?.checked) localStorage.setItem('genoTutorialSkip', new Date().toISOString().slice(0,10));
+  closeSheet();
+}
 
 /* ── 노드 CRUD (수정 #7: 노드/링크 단위 저장) ── */
 function errSave(){ toast('저장에 실패했습니다. 연결을 확인해 주세요.'); }
