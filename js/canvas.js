@@ -19,6 +19,7 @@ async function openCanvas(id){
   S.geno.nodes = S.geno.nodes || {};
   S.geno.links = S.geno.links || {};
   S.geno.households = S.geno.households || {};
+  S.geno.textboxes = S.geno.textboxes || {};
 
   buildStage();
   setTool('');            // 기본값: 아무 도구도 선택 안 됨
@@ -79,10 +80,23 @@ function buildStage(){
     S.sel=null; S.linkFrom=null; draw();
   });
 
-  /* [이식] 캔버스 빈 곳 우클릭 → 브라우저 메뉴 대신 컨텍스트 메뉴 닫기 */
+  /* 캔버스 빈 곳 우클릭 → 브라우저 메뉴 대신 "글상자 추가" 메뉴 표시
+     (인물/글상자 자체의 contextmenu 핸들러가 stopPropagation 하므로,
+      여기까지 이벤트가 올라오면 진짜 빈 공간을 우클릭한 것) */
   const stageWrap = $('stageWrap');
   if(stageWrap && !stageWrap._ctxBound){
-    stageWrap.addEventListener('contextmenu', e=> e.preventDefault());
+    stageWrap.addEventListener('contextmenu', e=>{
+      e.preventDefault();
+      hideCtxMenu();
+      const pos = S.stage.getPointerPosition();
+      if(!pos) return;
+      const scale = S.stage.scaleX();
+      const canvasX = (pos.x - S.stage.x())/scale;
+      const canvasY = (pos.y - S.stage.y())/scale;
+      showMiniMenu([
+        {icon:'🗒', text:'글상자 추가', onClick:()=> addTextBox(canvasX, canvasY)}
+      ], e.clientX, e.clientY);
+    });
     stageWrap._ctxBound = true;
   }
   /* [이식] 캔버스 진입 시 히스토리 초기화(현재 상태를 기준점으로) */
@@ -216,7 +230,41 @@ function draw(){
   });
   drawChildStructures(childLinks);
   Object.values(S.geno.nodes).forEach(drawNode);
+  drawTextBoxes();
   S.layer.draw();
+}
+
+/* ═══ 글상자(텍스트박스) — 캔버스에 자유 배치하는 메모 ═══ */
+function drawTextBoxes(){
+  Object.values(S.geno.textboxes||{}).forEach(tb=>{
+    const grp = new Konva.Group({ x:tb.x, y:tb.y, draggable:true });
+    const txt = new Konva.Text({
+      text:tb.text||'', fontSize:12.5, fontFamily:'Pretendard',
+      fill:'#3B4A44', width:180, padding:9, lineHeight:1.4
+    });
+    const bg = new Konva.Rect({
+      width:txt.width(), height:txt.height(),
+      fill:'#FFF7DE', stroke:'#E3D5A0', strokeWidth:1.2, dash:[5,4], cornerRadius:6
+    });
+    grp.add(bg); grp.add(txt);
+
+    grp.on('dragend', ()=>{
+      tb.x = Math.round(grp.x()); tb.y = Math.round(grp.y());
+      db.ref(genoPath()+'/textboxes/'+tb.id).update({x:tb.x, y:tb.y}).catch(errSave);
+      metaSave();
+    });
+    grp.on('click tap', e=>{ e.cancelBubble = true; openTextBoxEdit(tb.id); });
+    grp.on('contextmenu', e=>{
+      e.evt.preventDefault(); e.cancelBubble = true;
+      if(e.evt.stopPropagation) e.evt.stopPropagation();
+      showMiniMenu([
+        {icon:'✏️', text:'내용 수정', onClick:()=> openTextBoxEdit(tb.id)},
+        {icon:'🗑', text:'삭제', danger:true, onClick:()=> delTextBox(tb.id)}
+      ], e.evt.clientX, e.evt.clientY);
+    });
+
+    S.layer.add(grp);
+  });
 }
 
 /* ═══ 동거가족 표시 — 점선 타원으로 인물 묶음 표시 ═══ */

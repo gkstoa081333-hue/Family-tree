@@ -108,6 +108,7 @@ function ensureCtxMenu(){
     <button data-a="info">👤 인물 정보 입력 / 수정</button>
     <button data-a="info-status">🎨 상태 코딩 (질환·치료 등)</button>
     <button data-a="info-health">🩺 건강 & 지지 (증상·가족력)</button>
+    <button data-a="info-memo">📋 특이사항</button>
     <div class="ctx-sep"></div>
     <button data-a="delete" style="color:var(--danger);">🗑 이 인물 삭제</button>`;
 
@@ -294,10 +295,93 @@ function ctxOutside(e){
   const m = $('ctxMenu'); if(m && !m.contains(e.target)) hideCtxMenu();
 }
 
+/* ══════════════════════════════════════════════════════════
+   [신규] 미니 메뉴 — 캔버스 빈 공간 / 글상자 우클릭용 (버튼 1~2개)
+   ══════════════════════════════════════════════════════════ */
+function ensureMiniMenu(){
+  if($('miniCtxMenu')) return;
+  const m = document.createElement('div');
+  m.id = 'miniCtxMenu';
+  m.style.cssText = 'position:fixed;z-index:9999;display:none;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(30,50,40,.18);padding:6px;min-width:160px;';
+  document.body.appendChild(m);
+}
+function showMiniMenu(items, clientX, clientY){
+  hideCtxMenu(); hideMiniMenu();
+  ensureMiniMenu();
+  const m = $('miniCtxMenu');
+  m.innerHTML = items.map((it,i)=>
+    `<button data-i="${i}" style="display:block;width:100%;text-align:left;background:none;border:none;padding:8px 11px;font-size:13.5px;border-radius:7px;color:${it.danger?'var(--danger)':'var(--ink)'};cursor:pointer;white-space:nowrap;">${it.icon||''} ${it.text}</button>`
+  ).join('');
+  m.querySelectorAll('button').forEach(b=>{
+    b.onmouseenter=()=> b.style.background='var(--sage-bg)';
+    b.onmouseleave=()=> b.style.background='none';
+    b.onclick = e=>{ e.stopPropagation(); const it = items[+b.dataset.i]; hideMiniMenu(); if(it && it.onClick) it.onClick(); };
+  });
+  m.style.display='block';
+  const mw=m.offsetWidth, mh=m.offsetHeight;
+  let x=clientX, y=clientY;
+  if(x+mw > window.innerWidth-8)  x = window.innerWidth - mw - 8;
+  if(y+mh > window.innerHeight-8) y = Math.max(8, window.innerHeight - mh - 8);
+  m.style.left=x+'px'; m.style.top=y+'px';
+  setTimeout(()=> document.addEventListener('mousedown', miniMenuOutside), 0);
+}
+function hideMiniMenu(){
+  const m = $('miniCtxMenu'); if(m) m.style.display='none';
+  document.removeEventListener('mousedown', miniMenuOutside);
+}
+function miniMenuOutside(e){
+  const m = $('miniCtxMenu'); if(m && !m.contains(e.target)) hideMiniMenu();
+}
+
+/* ══════════════════════════════════════════════════════════
+   [신규] 글상자(텍스트박스) — 캔버스 빈 공간에 자유 배치하는 메모
+   ══════════════════════════════════════════════════════════ */
+let tbDraft = null; // {id, x, y} — 저장 전까지는 S.geno.textboxes에 넣지 않음
+function addTextBox(x, y){
+  tbDraft = { id: uid(), x: Math.round(x), y: Math.round(y) };
+  openTextBoxSheet('', true);
+}
+function openTextBoxEdit(id){
+  const tb = S.geno.textboxes[id]; if(!tb) return;
+  tbDraft = { id, x:tb.x, y:tb.y };
+  openTextBoxSheet(tb.text, false);
+}
+function openTextBoxSheet(text, isNew){
+  openSheet(`
+    <h3>${isNew?'글상자 추가':'글상자 수정'}</h3>
+    <div class="sub">캔버스 위에 자유롭게 놓는 메모입니다. 특이사항, 참고 내용 등을 적어두세요.</div>
+    <div class="fld"><label>내용</label>
+      <textarea id="tbText" class="inp" rows="5" placeholder="예) 2024년 이혼, 양육권 분쟁 중">${esc(text||'')}</textarea></div>
+    <div class="sheet-acts">
+      ${isNew?'':`<button class="btn ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="delTextBox('${tbDraft.id}')">삭제</button>`}
+      <button class="btn" onclick="saveTextBox()">저장하기</button>
+    </div>
+  `);
+  setTimeout(()=>{ const el=$('tbText'); if(el) el.focus(); }, 60);
+}
+function saveTextBox(){
+  if(!tbDraft) return;
+  const text = $('tbText').value.trim();
+  if(!text){ closeSheet(); tbDraft=null; return; } // 빈 내용 저장은 취소로 처리
+  const tb = S.geno.textboxes[tbDraft.id] || { id:tbDraft.id, x:tbDraft.x, y:tbDraft.y, createdAt:Date.now() };
+  tb.text = text; tb.updatedAt = Date.now();
+  S.geno.textboxes[tb.id] = tb;
+  db.ref(genoPath()+'/textboxes/'+tb.id).set(tb).catch(errSave);
+  metaSave(); draw(); closeSheet(); toast('글상자를 저장했습니다.');
+  tbDraft = null;
+}
+function delTextBox(id){
+  if(!confirm('이 글상자를 삭제할까요?')) return;
+  delete S.geno.textboxes[id];
+  db.ref(genoPath()+'/textboxes/'+id).remove().catch(errSave);
+  metaSave(); draw(); closeSheet(); toast('글상자를 삭제했습니다.');
+  tbDraft = null;
+}
+
 /* ── Undo / Redo (스냅샷 방식) ── */
 let genoHistory = [], genoHistIndex = -1, genoRestoring = false;
 const GENO_MAX_HIST = 40;
-function genoSnapshot(){ return JSON.stringify({nodes:S.geno.nodes, links:S.geno.links, households:S.geno.households}); }
+function genoSnapshot(){ return JSON.stringify({nodes:S.geno.nodes, links:S.geno.links, households:S.geno.households, textboxes:S.geno.textboxes}); }
 function pushHistory(){
   if(genoRestoring) return;
   genoHistory = genoHistory.slice(0, genoHistIndex+1);
@@ -310,8 +394,9 @@ function restoreHistory(snapStr){
   genoRestoring = true;
   const snap = JSON.parse(snapStr);
   S.geno.nodes = snap.nodes||{}; S.geno.links = snap.links||{}; S.geno.households = snap.households||{};
+  S.geno.textboxes = snap.textboxes||{};
   // Firebase에 전체 덮어쓰기 (수동저장 철학과 동일하게 즉시 반영)
-  db.ref(genoPath()).update({ nodes:S.geno.nodes, links:S.geno.links, households:S.geno.households }).catch(errSave);
+  db.ref(genoPath()).update({ nodes:S.geno.nodes, links:S.geno.links, households:S.geno.households, textboxes:S.geno.textboxes }).catch(errSave);
   metaSave(); draw();
   genoRestoring = false;
   updateUndoButtons();

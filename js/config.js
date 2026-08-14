@@ -28,7 +28,7 @@ const S = {
   uid:null, me:null, org:null, joinCode:null,
   allCases:{},                 // 기관 전체 (관리자 패널용)
   cases:{},                    // 내가 열람 가능한 것
-  caseId:null, geno:{nodes:{},links:{},households:{}},
+  caseId:null, geno:{nodes:{},links:{},households:{},textboxes:{}},
   tool:'', sel:null, linkFrom:null,
   childMode:null,              // {parentId, type, yearStart, yearEnd} — 자녀 연속 등록 모드
   householdDraft:null,         // Set<nodeId> — 동거가족표시 도구로 순서대로 클릭 중인 인물들
