@@ -335,13 +335,9 @@ function miniMenuOutside(e){
 }
 
 /* ══════════════════════════════════════════════════════════
-   [신규] 글상자(텍스트박스) — 캔버스 빈 공간에 자유 배치하는 메모
+   [신규] 글상자(텍스트박스) — 인물 우클릭 "특이사항"으로 만드는 메모
    ══════════════════════════════════════════════════════════ */
 let tbDraft = null; // {id, x, y} — 저장 전까지는 S.geno.textboxes에 넣지 않음
-function addTextBox(x, y){
-  tbDraft = { id: uid(), x: Math.round(x), y: Math.round(y) };
-  openTextBoxSheet('', true);
-}
 function openTextBoxEdit(id){
   const tb = S.geno.textboxes[id]; if(!tb) return;
   tbDraft = { id, x:tb.x, y:tb.y };

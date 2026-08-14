@@ -80,23 +80,10 @@ function buildStage(){
     S.sel=null; S.linkFrom=null; draw();
   });
 
-  /* 캔버스 빈 곳 우클릭 → 브라우저 메뉴 대신 "글상자 추가" 메뉴 표시
-     (인물/글상자 자체의 contextmenu 핸들러가 stopPropagation 하므로,
-      여기까지 이벤트가 올라오면 진짜 빈 공간을 우클릭한 것) */
+  /* [이식] 캔버스 빈 곳 우클릭 → 브라우저 메뉴 대신 컨텍스트 메뉴 닫기 */
   const stageWrap = $('stageWrap');
   if(stageWrap && !stageWrap._ctxBound){
-    stageWrap.addEventListener('contextmenu', e=>{
-      e.preventDefault();
-      hideCtxMenu();
-      const pos = S.stage.getPointerPosition();
-      if(!pos) return;
-      const scale = S.stage.scaleX();
-      const canvasX = (pos.x - S.stage.x())/scale;
-      const canvasY = (pos.y - S.stage.y())/scale;
-      showMiniMenu([
-        {icon:'🗒', text:'글상자 추가', onClick:()=> addTextBox(canvasX, canvasY)}
-      ], e.clientX, e.clientY);
-    });
+    stageWrap.addEventListener('contextmenu', e=> e.preventDefault());
     stageWrap._ctxBound = true;
   }
   /* [이식] 캔버스 진입 시 히스토리 초기화(현재 상태를 기준점으로) */
