@@ -136,6 +136,7 @@ function ensureCtxMenu(){
       setTool('household');
     }
     else if(a==='info') openInfoCard(ctxTarget);
+    else if(a==='info-memo') addTextBoxNearNode(ctxTarget);
     else if(a && a.startsWith('info-')) openInfoCard(ctxTarget, a.slice(5));
     else if(a==='delete'){ if(confirm('이 인물과 연결된 관계선을 모두 삭제할까요?')) delNodeDirect(ctxTarget); }
     hideCtxMenu();
@@ -346,18 +347,27 @@ function openTextBoxEdit(id){
   tbDraft = { id, x:tb.x, y:tb.y };
   openTextBoxSheet(tb.text, false);
 }
-function openTextBoxSheet(text, isNew){
+function openTextBoxSheet(text, isNew, opts){
+  opts = opts || {};
+  const title = opts.title || (isNew?'글상자 추가':'글상자 수정');
+  const btnLabel = opts.btnLabel || '저장하기';
   openSheet(`
-    <h3>${isNew?'글상자 추가':'글상자 수정'}</h3>
+    <h3>${title}</h3>
     <div class="sub">캔버스 위에 자유롭게 놓는 메모입니다. 특이사항, 참고 내용 등을 적어두세요.</div>
     <div class="fld"><label>내용</label>
       <textarea id="tbText" class="inp" rows="5" placeholder="예) 2024년 이혼, 양육권 분쟁 중">${esc(text||'')}</textarea></div>
     <div class="sheet-acts">
       ${isNew?'':`<button class="btn ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="delTextBox('${tbDraft.id}')">삭제</button>`}
-      <button class="btn" onclick="saveTextBox()">저장하기</button>
+      <button class="btn" onclick="saveTextBox()">${btnLabel}</button>
     </div>
   `);
   setTimeout(()=>{ const el=$('tbText'); if(el) el.focus(); }, 60);
+}
+/* 인물 우클릭 → "특이사항": 메모만 입력받아 완료 즉시 그 인물 옆에 글상자로 띄움 */
+function addTextBoxNearNode(nodeId){
+  const n = S.geno.nodes[nodeId]; if(!n) return;
+  tbDraft = { id: uid(), x: Math.round(n.x + 90), y: Math.round(n.y - 70) };
+  openTextBoxSheet('', true, { title:'특이사항', btnLabel:'완료' });
 }
 function saveTextBox(){
   if(!tbDraft) return;
