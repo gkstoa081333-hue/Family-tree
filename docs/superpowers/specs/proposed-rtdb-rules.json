@@ -1,0 +1,69 @@
+{
+  "rules": {
+
+    "orgs": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('superAdmin').val() === true",
+      "$orgId": {
+        ".read": "auth != null",
+        ".write": "auth != null && ((!data.exists() && newData.child('ownerUid').val() === auth.uid && root.child('users').child(auth.uid).child('superAdmin').val() === true) || (data.exists() && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('orgId').val() === $orgId))",
+        "ownerUid": { ".validate": "!data.exists() || newData.val() === data.val()" },
+        "needsAdmin": { ".validate": "newData.val() === false || (newData.val() === true && !data.exists())" }
+      }
+    },
+
+    "orgCodes": {
+      "$code": {
+        ".read": "auth != null",
+        ".write": "auth != null && !data.exists() && newData.isString() && root.child('orgs').child(newData.val()).child('ownerUid').val() === auth.uid"
+      }
+    },
+
+    "orgPrivate": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('superAdmin').val() === true",
+      "$orgId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('orgId').val() === $orgId",
+        ".write": "auth != null && (root.child('orgs').child($orgId).child('ownerUid').val() === auth.uid || (root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('orgId').val() === $orgId))"
+      }
+    },
+
+    "users": {
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        ".write": "auth != null && ((auth.uid === $uid && ((!data.exists() && ((newData.child('role').val() === 'member' && newData.child('approved').val() === false) || (newData.child('role').val() === 'admin' && newData.child('approved').val() === true && root.child('orgs').child(newData.child('orgId').val()).child('needsAdmin').val() === true))) || (data.exists() && newData.child('approved').val() === data.child('approved').val() && newData.child('role').val() === data.child('role').val() && newData.child('orgId').val() === data.child('orgId').val()))) || (auth.uid !== $uid && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('orgId').val() === data.child('orgId').val()))",
+        "role": { ".validate": "newData.val() === 'admin' || newData.val() === 'member'" },
+        "orgId": { ".validate": "newData.isString() && root.child('orgs').child(newData.val()).exists() && (!data.exists() || newData.val() === data.val())" },
+        "superAdmin": { ".validate": "root.child('users').child(auth.uid).child('superAdmin').val() === true" }
+      }
+    },
+
+    "orgMembers": {
+      "$orgId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('orgId').val() === $orgId",
+        "$uid": {
+          ".write": "auth != null && ((auth.uid === $uid && root.child('users').child(auth.uid).child('orgId').val() === $orgId && ((newData.child('role').val() === 'member' && newData.child('approved').val() === false) || (newData.child('role').val() === 'admin' && newData.child('approved').val() === true && root.child('orgs').child($orgId).child('needsAdmin').val() === true))) || (root.child('users').child(auth.uid).child('role').val() === 'admin' && root.child('users').child(auth.uid).child('orgId').val() === $orgId))",
+          "superAdmin": { ".validate": "root.child('users').child(auth.uid).child('superAdmin').val() === true" }
+        }
+      }
+    },
+
+    "cases": {
+      "$orgId": {
+        ".read": "auth != null && root.child('users').child(auth.uid).child('approved').val() === true && root.child('users').child(auth.uid).child('orgId').val() === $orgId",
+        "$caseId": {
+          ".write": "auth != null && root.child('users').child(auth.uid).child('approved').val() === true && root.child('users').child(auth.uid).child('orgId').val() === $orgId && ((!data.exists() && newData.child('ownerUid').val() === auth.uid) || (data.exists() && (data.child('ownerUid').val() === auth.uid || root.child('users').child(auth.uid).child('role').val() === 'admin')))",
+          "visibility": { ".validate": "newData.val() === 'private' || newData.val() === 'org'" },
+          "ownerUid": { ".validate": "!data.exists() || newData.val() === data.val()" }
+        }
+      }
+    },
+
+    "genograms": {
+      "$orgId": {
+        "$caseId": {
+          ".read": "auth != null && root.child('users').child(auth.uid).child('approved').val() === true && root.child('users').child(auth.uid).child('orgId').val() === $orgId && (root.child('cases').child($orgId).child($caseId).child('ownerUid').val() === auth.uid || root.child('cases').child($orgId).child($caseId).child('visibility').val() === 'org' || root.child('users').child(auth.uid).child('role').val() === 'admin')",
+          ".write": "auth != null && root.child('users').child(auth.uid).child('approved').val() === true && root.child('users').child(auth.uid).child('orgId').val() === $orgId && (root.child('cases').child($orgId).child($caseId).child('ownerUid').val() === auth.uid || root.child('cases').child($orgId).child($caseId).child('visibility').val() === 'org' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
+        }
+      }
+    }
+  }
+}
