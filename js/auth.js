@@ -24,7 +24,7 @@ async function doLogin(){
   $('btnLogin').disabled = false;
 }
 
-/* 코드 → 기관 확인 후 users + orgMembers 이중 기록 */
+/* 코드 → 기관 확인 후 users + orgMembers 이중 기록. 그 기관의 첫 가입자는 자동으로 관리자·승인 처리 */
 async function registerMember(user, name, code){
   let orgId = null;
   try{ const s = await db.ref('orgCodes/'+code).once('value'); orgId = s.val(); }catch(e){}
@@ -33,11 +33,18 @@ async function registerMember(user, name, code){
     try{ await user.delete(); }catch(e){ await auth.signOut(); }   // 유령 계정 방지 (수정 #6 계열)
     return false;
   }
-  const rec = { name, email:user.email, orgId, role:'member', approved:false, createdAt:Date.now() };
+  let isFirstMember = false;
+  try{
+    const membersSnap = await db.ref('orgMembers/'+orgId).once('value');
+    isFirstMember = !membersSnap.exists();
+  }catch(e){}
+  const role = isFirstMember ? 'admin' : 'member';
+  const approved = isFirstMember;
+  const rec = { name, email:user.email, orgId, role, approved, createdAt:Date.now() };
   try{
     await db.ref('users/'+user.uid).set(rec);
     await db.ref('orgMembers/'+orgId+'/'+user.uid).set({
-      name, email:user.email, role:'member', approved:false, createdAt:rec.createdAt
+      name, email:user.email, role, approved, createdAt:rec.createdAt
     });
   }catch(e){ setMsg('가입 처리 중 문제가 발생했습니다. 아래 "가입 마무리"로 다시 시도해 주세요.'); return false; }
   return true;
