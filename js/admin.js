@@ -34,9 +34,11 @@ function loadAdmin(){
       <div class="usr">
         <div class="avatar">${esc((r.name||'?').slice(0,1))}</div>
         <div class="ub"><b>${esc(r.name)}</b><small>${esc(r.email)}</small></div>
-        <span class="badge">${r.role==='admin'?'관리자':'직원'}</span>
+        <span class="badge">${r.role==='admin'?'관리자':'직원'}${r.superAdmin?' · 슈퍼':''}</span>
         ${u!==S.uid ? `<button class="btn sm ghost" onclick="toggleRole('${u}','${r.role}')">
           ${r.role==='admin'?'직원으로':'관리자로'}</button>` : ''}
+        ${(S.me.superAdmin && u!==S.uid && r.role==='admin') ? `<button class="btn sm ghost" onclick="toggleSuperAdmin('${u}','${!!r.superAdmin}')">
+          ${r.superAdmin?'슈퍼관리자 해제':'슈퍼관리자로'}</button>` : ''}
       </div>`).join('');
   }, err => toast('직원 목록을 불러오지 못했습니다.'));
 
@@ -73,6 +75,17 @@ async function toggleRole(u, cur){
       ['orgMembers/'+S.me.orgId+'/'+u+'/role']: next
     });
     toast('권한을 바꿨습니다.');
+  }catch(e){ toast('처리에 실패했습니다.'); }
+}
+async function toggleSuperAdmin(u, cur){
+  const next = cur !== 'true';
+  if(!confirm(next ? '이 관리자에게 슈퍼관리자 권한을 줄까요? 기관을 추가하고 코드를 발급할 수 있게 됩니다.' : '슈퍼관리자 권한을 해제할까요?')) return;
+  try{
+    await db.ref().update({
+      ['users/'+u+'/superAdmin']: next,
+      ['orgMembers/'+S.me.orgId+'/'+u+'/superAdmin']: next
+    });
+    toast(next ? '슈퍼관리자로 지정했습니다.' : '슈퍼관리자를 해제했습니다.');
   }catch(e){ toast('처리에 실패했습니다.'); }
 }
 function renderAdminCases(all){
