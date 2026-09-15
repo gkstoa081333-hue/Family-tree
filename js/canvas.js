@@ -222,18 +222,42 @@ function draw(){
 }
 
 /* ═══ 글상자(텍스트박스) — 캔버스에 자유 배치하는 메모 ═══ */
+const TB_MIN_W = 90, TB_MAX_W = 420;
 function drawTextBoxes(){
   Object.values(S.geno.textboxes||{}).forEach(tb=>{
+    const w = tb.width || 180;
     const grp = new Konva.Group({ x:tb.x, y:tb.y, draggable:true });
     const txt = new Konva.Text({
       text:tb.text||'', fontSize:12.5, fontFamily:'Pretendard',
-      fill:'#3B4A44', width:180, padding:9, lineHeight:1.4
+      fill:'#3B4A44', width:w, padding:9, lineHeight:1.4
     });
     const bg = new Konva.Rect({
       width:txt.width(), height:txt.height(),
       fill:'#FFF7DE', stroke:'#E3D5A0', strokeWidth:1.2, dash:[5,4], cornerRadius:6
     });
     grp.add(bg); grp.add(txt);
+
+    /* 크기 조절 핸들 — 우하단 모서리를 드래그해 폭을 늘리거나 줄임 (높이는 글자에 맞춰 자동) */
+    const handle = new Konva.Rect({
+      x: bg.width()-9, y: bg.height()-9, width:9, height:9,
+      fill:'#B9A46A', opacity:.55, cornerRadius:2, draggable:true
+    });
+    handle.on('mousedown touchstart', e=>{ e.cancelBubble = true; });
+    handle.on('dragmove', e=>{
+      e.cancelBubble = true;
+      const nw = Math.max(TB_MIN_W, Math.min(TB_MAX_W, handle.x()+9));
+      txt.width(nw);
+      bg.width(txt.width()); bg.height(txt.height());
+      handle.position({ x:bg.width()-9, y:bg.height()-9 });
+      S.layer.batchDraw();
+    });
+    handle.on('dragend', e=>{
+      e.cancelBubble = true;
+      tb.width = Math.round(txt.width());
+      db.ref(genoPath()+'/textboxes/'+tb.id).update({width:tb.width}).catch(errSave);
+      metaSave();
+    });
+    grp.add(handle);
 
     grp.on('dragend', ()=>{
       tb.x = Math.round(grp.x()); tb.y = Math.round(grp.y());
@@ -345,6 +369,18 @@ function drawChildStructures(childLinks){
       .sort((a,b)=> a.node.x - b.node.x);
     if(!kids.length) return;
 
+    /* 단독 자녀가 커플 중앙과 어긋나 있으면, 계단형으로 꺾지 않고 직선 한 줄로 연결 */
+    if(kids.length===1 && Math.abs(kids[0].node.x - ax) >= 3){
+      const k = kids[0];
+      const dash = k.link.type==='adopted' ? [6,4] : undefined;
+      const cy = k.node.y - R;
+      S.layer.add(new Konva.Line({
+        points:[ax, coupleY, k.node.x, cy], stroke:'#22332E', strokeWidth:2, dash, listening:false
+      }));
+      addChildHit(k.link, [ax, coupleY, k.node.x, k.node.y]);
+      return;
+    }
+
     /* 형제 수평선 Y = 부모 하단과 최상위 자녀 상단의 중간 */
     const nearestChildTop = Math.min(...kids.map(k=> k.node.y - R));
     const barY = Math.round((visibleStartY + nearestChildTop) / 2);
@@ -358,18 +394,11 @@ function drawChildStructures(childLinks){
     if(kids.length===1){
       const k = kids[0];
       const dash = k.link.type==='adopted' ? [6,4] : undefined;
-      /* 자녀 아이콘 상단에서 끝남 (child.y - R, 갭 없음) */
+      /* 자녀 아이콘 상단에서 끝남 (child.y - R, 갭 없음) — 이 분기는 이제 중앙 정렬(어긋남<3px)일 때만 옴 */
       const cy = k.node.y - R;
-      if(Math.abs(k.node.x - ax) < 3){
-        S.layer.add(new Konva.Line({
-          points:[ax, barY, ax, cy], stroke:'#22332E', strokeWidth:2, dash, listening:false
-        }));
-      } else {
-        S.layer.add(new Konva.Line({
-          points:[ax, barY, k.node.x, barY, k.node.x, cy],
-          stroke:'#22332E', strokeWidth:2, dash, listening:false
-        }));
-      }
+      S.layer.add(new Konva.Line({
+        points:[ax, barY, ax, cy], stroke:'#22332E', strokeWidth:2, dash, listening:false
+      }));
       addChildHit(k.link, [ax, coupleY, k.node.x, k.node.y]);
 
     } else {
