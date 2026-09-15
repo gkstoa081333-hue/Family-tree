@@ -40,14 +40,16 @@ async function registerMember(user, name, code){
   const role = isFirstMember ? 'admin' : 'member';
   const approved = isFirstMember;
   const rec = { name, email:user.email, orgId, role, approved, createdAt:Date.now() };
-  const writes = {
-    ['users/'+user.uid]: rec,
-    ['orgMembers/'+orgId+'/'+user.uid]: { name, email:user.email, role, approved, createdAt:rec.createdAt }
-  };
-  if(isFirstMember) writes['orgs/'+orgId+'/needsAdmin'] = false;
   try{
-    await db.ref().update(writes);
+    await db.ref().update({
+      ['users/'+user.uid]: rec,
+      ['orgMembers/'+orgId+'/'+user.uid]: { name, email:user.email, role, approved, createdAt:rec.createdAt }
+    });
   }catch(e){ setMsg('가입 처리 중 문제가 발생했습니다. 아래 "가입 마무리"로 다시 시도해 주세요.'); return false; }
+  /* needsAdmin 해제는 등록이 끝난 뒤 별도 쓰기로 분리한다 — 같은 update()에 묶으면
+     보안 규칙이 "해제된 이후" 값을 기준으로 이 등록 자체를 심사하게 되어 거부된다.
+     (등록 자체는 이미 끝났으므로 이 쓰기가 실패해도 가입은 그대로 성공 처리) */
+  if(isFirstMember) db.ref('orgs/'+orgId+'/needsAdmin').set(false).catch(()=>{});
   return true;
 }
 
