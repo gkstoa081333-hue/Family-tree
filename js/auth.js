@@ -5,13 +5,12 @@
 
 function switchAuth(mode){
   setMsg('');
-  ['formLogin','formSignup','formOrg','formResume'].forEach(f=>$(f).classList.add('hide'));
+  ['formLogin','formSignup','formResume'].forEach(f=>$(f).classList.add('hide'));
   $('authTabs').classList.toggle('hide', mode==='resume');
   $('tabLogin').classList.toggle('on', mode==='login');
   $('tabSignup').classList.toggle('on', mode!=='login');
   if(mode==='login') $('formLogin').classList.remove('hide');
   else if(mode==='signup') $('formSignup').classList.remove('hide');
-  else if(mode==='org') $('formOrg').classList.remove('hide');
   else $('formResume').classList.remove('hide');
 }
 
@@ -78,46 +77,6 @@ async function doResume(){
   const ok = await registerMember(user, name, code);
   $('btnResume').disabled = false;
   if(ok) routeUser(user);
-}
-
-async function doCreateOrg(){
-  const orgName = $('orgName').value.trim();
-  const name    = $('orgAdmin').value.trim();
-  const email   = $('orgEmail').value.trim();
-  const pw      = $('orgPw').value;
-  if(!orgName || !name || !email || !pw){ setMsg('모든 항목을 입력해 주세요.'); return; }
-  setMsg(''); $('btnOrg').disabled = true; authBusy = true;
-
-  let cred;
-  try{ cred = await auth.createUserWithEmailAndPassword(email, pw); }
-  catch(e){ setMsg(authErr(e)); $('btnOrg').disabled=false; authBusy=false; return; }
-
-  try{
-    const orgId = db.ref('orgs').push().key;
-    await db.ref('orgs/'+orgId).set({ name:orgName, ownerUid:cred.user.uid, createdAt:Date.now() });
-
-    // 가입코드 발급 (충돌 시 재생성 — 규칙이 중복 생성을 거부)
-    const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-    let code = null;
-    for(let i=0; i<5 && !code; i++){
-      const c = Array.from({length:6},()=>A[Math.floor(Math.random()*A.length)]).join('');
-      try{ await db.ref('orgCodes/'+c).set(orgId); code = c; }catch(e){}
-    }
-    if(!code) throw new Error('code');
-    await db.ref('orgPrivate/'+orgId).set({ joinCode:code });
-
-    await db.ref('users/'+cred.user.uid).set({
-      name, email, orgId, role:'admin', approved:true, createdAt:Date.now()
-    });
-    await db.ref('orgMembers/'+orgId+'/'+cred.user.uid).set({
-      name, email, role:'admin', approved:true, createdAt:Date.now()
-    });
-    authBusy = false; $('btnOrg').disabled = false;
-    routeUser(cred.user);
-  }catch(e){
-    authBusy = false; $('btnOrg').disabled = false;
-    setMsg('기관 등록 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.');
-  }
 }
 
 async function doReset(){

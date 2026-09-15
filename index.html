@@ -52,7 +52,7 @@
       <div class="fld"><label>기관 가입코드</label>
         <input id="suCode" class="inp" placeholder="기관 관리자에게 받은 코드" style="text-transform:uppercase;letter-spacing:.08em;">
         <div style="font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5;">
-          코드가 없다면 <a onclick="switchAuth('org')" style="color:var(--sage-deep);font-weight:600;cursor:pointer;">기관을 새로 등록</a>하세요.
+          코드가 없다면 소속 기관 관리자에게 문의해 주세요.
         </div>
       </div>
       <div class="fld"><label>이메일</label>
@@ -61,22 +61,6 @@
         <input id="suPw" class="inp" type="password" placeholder="비밀번호" autocomplete="new-password"></div>
       <button class="btn" id="btnSignup" onclick="doSignup()">가입 신청하기</button>
       <div class="foot-note">가입 후 기관 관리자의 승인을 받으면 이용할 수 있습니다.</div>
-    </div>
-
-    <div id="formOrg" class="hide">
-      <div class="fld"><label>기관명</label>
-        <input id="orgName" class="inp" placeholder="○○시정신건강복지센터"></div>
-      <div class="fld"><label>관리자 이름</label>
-        <input id="orgAdmin" class="inp" placeholder="홍길동"></div>
-      <div class="fld"><label>이메일</label>
-        <input id="orgEmail" class="inp" type="email" placeholder="name@center.or.kr"></div>
-      <div class="fld"><label>비밀번호 (6자 이상)</label>
-        <input id="orgPw" class="inp" type="password" placeholder="비밀번호"></div>
-      <button class="btn" id="btnOrg" onclick="doCreateOrg()">기관 등록하고 시작하기</button>
-      <div class="foot-note">
-        등록하면 관리자 권한을 받고, 소속 직원에게 나눠줄 <b>가입코드</b>가 발급됩니다.<br>
-        <a onclick="switchAuth('signup')">코드로 가입하기</a>
-      </div>
     </div>
 
     <!-- 가입이 중간에 끊긴 계정의 마무리 -->
