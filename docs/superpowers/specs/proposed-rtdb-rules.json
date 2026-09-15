@@ -64,6 +64,16 @@
           ".write": "auth != null && root.child('users').child(auth.uid).child('approved').val() === true && root.child('users').child(auth.uid).child('orgId').val() === $orgId && (root.child('cases').child($orgId).child($caseId).child('ownerUid').val() === auth.uid || root.child('cases').child($orgId).child($caseId).child('visibility').val() === 'org' || root.child('users').child(auth.uid).child('role').val() === 'admin')"
         }
       }
+    },
+
+    "requests": {
+      ".read": "auth != null && root.child('users').child(auth.uid).child('superAdmin').val() === true",
+      "$uid": {
+        ".read": "auth != null && auth.uid === $uid",
+        "$requestId": {
+          ".write": "auth != null && ((auth.uid === $uid && !data.exists() && newData.child('uid').val() === $uid && newData.child('status').val() === 'pending' && !newData.hasChild('reply')) || (data.exists() && root.child('users').child(auth.uid).child('superAdmin').val() === true))"
+        }
+      }
     }
   }
 }
