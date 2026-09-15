@@ -158,14 +158,51 @@ function loadOrgList(){
     const orgs = snap.val() || {};
     const codesSnap = await db.ref('orgPrivate').once('value');
     const codes = codesSnap.val() || {};
+    const membersSnap = await db.ref('orgMembers').once('value');
+    const allMembers = membersSnap.val() || {};
     const list = Object.entries(orgs).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
-    $('orgList').innerHTML = list.length ? list.map(([id,o])=>`
+    $('orgList').innerHTML = list.length ? list.map(([id,o])=>{
+      const memberCount = Object.keys(allMembers[id]||{}).length;
+      return `
       <div class="usr">
-        <div class="ub"><b>${esc(o.name)}</b><small>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('ko-KR') : '—'}</small></div>
+        <div class="ub"><b>${esc(o.name)}</b><small>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('ko-KR') : '—'} · 직원 ${memberCount}명</small></div>
         <span class="badge">${esc((codes[id]||{}).joinCode || '——————')}</span>
         <button class="btn sm ghost" onclick="navigator.clipboard.writeText('${esc((codes[id]||{}).joinCode||'')}').then(()=>toast('코드를 복사했습니다.'))">복사</button>
-      </div>`).join('')
+        ${memberCount===0 ? `<button class="btn sm ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="openDeleteOrgSheet('${id}','${esc(o.name)}')">삭제</button>` : ''}
+      </div>`;
+    }).join('')
       : `<p style="font-size:13px;color:var(--muted);padding:6px 2px;">등록된 기관이 없습니다.</p>`;
   }).catch(()=> toast('기관 목록을 불러오지 못했습니다.'));
+}
+
+/* 소속 직원이 0명인 기관만 삭제 가능 — 기관명을 정확히 입력해야 버튼이 활성화됨 */
+function openDeleteOrgSheet(orgId, orgName){
+  openSheet(`
+    <h3>기관 삭제</h3>
+    <div class="sub" style="color:var(--danger);">되돌릴 수 없습니다. 삭제하려면 기관명을 정확히 입력하세요.</div>
+    <div class="fld"><label>${esc(orgName)}</label>
+      <input id="delOrgConfirm" class="inp" placeholder="기관명 입력"></div>
+    <button class="btn" id="btnDeleteOrg" onclick="deleteOrg('${orgId}')" disabled>삭제</button>
+  `);
+  $('delOrgConfirm').oninput = e => { $('btnDeleteOrg').disabled = e.target.value !== orgName; };
+  setTimeout(()=>{ const el=$('delOrgConfirm'); if(el) el.focus(); }, 60);
+}
+
+async function deleteOrg(orgId){
+  try{
+    const memSnap = await db.ref('orgMembers/'+orgId).once('value');
+    if(memSnap.exists() && Object.keys(memSnap.val()||{}).length > 0){
+      toast('그 사이 직원이 가입해 삭제할 수 없습니다.');
+      closeSheet(); loadOrgList(); return;
+    }
+    const codeSnap = await db.ref('orgPrivate/'+orgId+'/joinCode').once('value');
+    const code = codeSnap.val();
+    const writes = { ['orgs/'+orgId]: null, ['orgPrivate/'+orgId]: null };
+    if(code) writes['orgCodes/'+code] = null;
+    await db.ref().update(writes);
+  }catch(e){ toast('기관 삭제에 실패했습니다.'); return; }
+  closeSheet();
+  toast('기관을 삭제했습니다.');
+  loadOrgList();
 }
 
