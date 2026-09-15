@@ -34,17 +34,19 @@ async function registerMember(user, name, code){
   }
   let isFirstMember = false;
   try{
-    const membersSnap = await db.ref('orgMembers/'+orgId).once('value');
-    isFirstMember = !membersSnap.exists();
+    const needsAdminSnap = await db.ref('orgs/'+orgId+'/needsAdmin').once('value');
+    isFirstMember = needsAdminSnap.val() === true;
   }catch(e){}
   const role = isFirstMember ? 'admin' : 'member';
   const approved = isFirstMember;
   const rec = { name, email:user.email, orgId, role, approved, createdAt:Date.now() };
+  const writes = {
+    ['users/'+user.uid]: rec,
+    ['orgMembers/'+orgId+'/'+user.uid]: { name, email:user.email, role, approved, createdAt:rec.createdAt }
+  };
+  if(isFirstMember) writes['orgs/'+orgId+'/needsAdmin'] = false;
   try{
-    await db.ref('users/'+user.uid).set(rec);
-    await db.ref('orgMembers/'+orgId+'/'+user.uid).set({
-      name, email:user.email, role, approved, createdAt:rec.createdAt
-    });
+    await db.ref().update(writes);
   }catch(e){ setMsg('가입 처리 중 문제가 발생했습니다. 아래 "가입 마무리"로 다시 시도해 주세요.'); return false; }
   return true;
 }

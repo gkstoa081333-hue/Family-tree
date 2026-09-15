@@ -128,7 +128,7 @@ async function addOrgAsSuperAdmin(){
   if(!orgName){ toast('기관명을 입력해 주세요.'); return; }
   try{
     const orgId = db.ref('orgs').push().key;
-    await db.ref('orgs/'+orgId).set({ name:orgName, ownerUid:S.uid, createdAt:Date.now() });
+    await db.ref('orgs/'+orgId).set({ name:orgName, ownerUid:S.uid, createdAt:Date.now(), needsAdmin:true });
 
     const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
     let code = null;
