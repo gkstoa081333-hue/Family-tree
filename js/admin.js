@@ -39,6 +39,9 @@ function loadAdmin(){
           ${r.role==='admin'?'직원으로':'관리자로'}</button>` : ''}
       </div>`).join('');
   }, err => toast('직원 목록을 불러오지 못했습니다.'));
+
+  $('superAdminPanel').classList.toggle('hide', !S.me.superAdmin);
+  if(S.me.superAdmin) loadOrgList();
 }
 
 /* 수정 #6: 거절 = 삭제가 아니라 rejected 마킹 (재가입 가능) */
@@ -93,5 +96,63 @@ function copyCode(){
   navigator.clipboard.writeText(S.joinCode||'')
     .then(()=>toast('가입코드를 복사했습니다.'))
     .catch(()=>toast('복사에 실패했습니다.'));
+}
+
+/* ═══ 슈퍼관리자: 기관 추가/코드 발급 ═══ */
+function openAddOrgSheet(){
+  openSheet(`
+    <h3>새 기관 추가</h3>
+    <div class="sub">기관명을 입력하면 가입코드가 발급됩니다.</div>
+    <div class="fld"><label>기관명</label>
+      <input id="newOrgName" class="inp" placeholder="○○시정신건강복지센터"></div>
+    <button class="btn" onclick="addOrgAsSuperAdmin()">기관 추가하고 코드 발급</button>
+  `);
+  setTimeout(()=>$('newOrgName').focus(),300);
+}
+
+async function addOrgAsSuperAdmin(){
+  const orgName = $('newOrgName').value.trim();
+  if(!orgName){ toast('기관명을 입력해 주세요.'); return; }
+  try{
+    const orgId = db.ref('orgs').push().key;
+    await db.ref('orgs/'+orgId).set({ name:orgName, ownerUid:S.uid, createdAt:Date.now() });
+
+    const A='ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = null;
+    for(let i=0; i<5 && !code; i++){
+      const c = Array.from({length:6},()=>A[Math.floor(Math.random()*A.length)]).join('');
+      try{ await db.ref('orgCodes/'+c).set(orgId); code = c; }catch(e){}
+    }
+    if(!code) throw new Error('code');
+    await db.ref('orgPrivate/'+orgId).set({ joinCode:code });
+
+    openSheet(`
+      <h3>기관이 추가되었습니다</h3>
+      <div class="sub">${esc(orgName)}</div>
+      <div class="code-box">
+        <small>이 기관 담당자에게 아래 코드를 전달하세요</small>
+        <b>${code}</b>
+        <div style="margin-top:11px;"><button class="btn sm ghost" onclick="navigator.clipboard.writeText('${code}').then(()=>toast('코드를 복사했습니다.'))">코드 복사</button></div>
+      </div>
+      <button class="btn" onclick="closeSheet()" style="margin-top:14px;">확인</button>
+    `);
+    loadOrgList();
+  }catch(e){ toast('기관 등록 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'); }
+}
+
+function loadOrgList(){
+  db.ref('orgs').once('value').then(async snap=>{
+    const orgs = snap.val() || {};
+    const codesSnap = await db.ref('orgPrivate').once('value');
+    const codes = codesSnap.val() || {};
+    const list = Object.entries(orgs).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+    $('orgList').innerHTML = list.length ? list.map(([id,o])=>`
+      <div class="usr">
+        <div class="ub"><b>${esc(o.name)}</b><small>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('ko-KR') : '—'}</small></div>
+        <span class="badge">${esc((codes[id]||{}).joinCode || '——————')}</span>
+        <button class="btn sm ghost" onclick="navigator.clipboard.writeText('${esc((codes[id]||{}).joinCode||'')}').then(()=>toast('코드를 복사했습니다.'))">복사</button>
+      </div>`).join('')
+      : `<p style="font-size:13px;color:var(--muted);padding:6px 2px;">등록된 기관이 없습니다.</p>`;
+  }).catch(()=> toast('기관 목록을 불러오지 못했습니다.'));
 }
 
