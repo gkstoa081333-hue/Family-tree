@@ -26,6 +26,7 @@ function enterApp(){
   $('sideAdmin').classList.toggle('hide', !isAdmin);
   $('tabBtnAdmin').classList.toggle('hide', !isAdmin);
   if(isAdmin) loadAdmin();
+  loadRequests();
 
   show('app');
   goTab(S.tab==='admin' && !isAdmin ? 'cases' : S.tab);
@@ -146,9 +147,9 @@ function miniGeno(c){
 
 function goTab(t){
   S.tab = t;
-  ['tabCases','tabAdmin','tabMe'].forEach(v=>$(v).classList.add('hide'));
+  ['tabCases','tabAdmin','tabMe','tabRequests'].forEach(v=>$(v).classList.add('hide'));
   $('tab'+t[0].toUpperCase()+t.slice(1)).classList.remove('hide');
-  [['cases','tabBtnCases','sideCases'],['admin','tabBtnAdmin','sideAdmin'],['me','tabBtnMe','sideMe']]
+  [['cases','tabBtnCases','sideCases'],['admin','tabBtnAdmin','sideAdmin'],['me','tabBtnMe','sideMe'],['requests','tabBtnRequests','sideRequests']]
     .forEach(([k,b,s])=>{ $(b).classList.toggle('on', k===t); $(s).classList.toggle('on', k===t); });
   updateNewBtn();
   $('mainScroll').scrollTop = 0;
