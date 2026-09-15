@@ -3,13 +3,21 @@
    기능개선/질문 제출, 내 요청 목록, (슈퍼관리자) 전체 요청 + 답변
    ============================================================ */
 
-let requestsRef = null;
+let requestsRef = null, allRequestsRef = null;
 
 function loadRequests(){
   if(requestsRef) requestsRef.off();
   requestsRef = db.ref('requests/'+S.uid);
   requestsRef.on('value', snap=> renderMyRequests(snap.val()),
     err => toast('요청 목록을 불러오지 못했습니다.'));
+
+  $('superAdminRequestPanel').classList.toggle('hide', !S.me.superAdmin);
+  if(S.me.superAdmin){
+    if(allRequestsRef) allRequestsRef.off();
+    allRequestsRef = db.ref('requests');
+    allRequestsRef.on('value', snap=> renderAllRequests(snap.val()),
+      err => toast('전체 요청 목록을 불러오지 못했습니다.'));
+  }
 }
 
 function renderMyRequests(data){
@@ -61,4 +69,37 @@ async function submitRequest(){
   }catch(e){ toast('요청 전송에 실패했습니다.'); return; }
   closeSheet();
   toast('요청을 보냈습니다.');
+}
+
+function renderAllRequests(data){
+  const list = [];
+  Object.values(data||{}).forEach(userReqs=>{
+    Object.values(userReqs||{}).forEach(r=> list.push(r));
+  });
+  list.sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
+  $('allReqCount').textContent = list.length ? `${list.length}건` : '';
+  $('allRequestList').innerHTML = list.length ? list.map(r=>`
+    <div class="usr" style="align-items:flex-start;flex-wrap:wrap;">
+      <div class="ub" style="flex:1 1 100%;">
+        <b>${r.type==='feature'?'💡':'❓'} ${esc(r.title)}</b>
+        <small style="display:block;margin-top:2px;">${esc(r.name||'')} · ${esc(r.orgName||'')}</small>
+        <small style="display:block;white-space:pre-wrap;margin-top:4px;">${esc(r.content)}</small>
+      </div>
+      <span class="badge ${r.status==='answered'?'':'wait'}">${r.status==='answered'?'답변완료':'답변대기'}</span>
+      <div style="flex:1 1 100%;margin-top:8px;">
+        <textarea id="reply-${r.uid}-${r.id}" class="inp" rows="2" placeholder="답변 입력">${esc(r.reply||'')}</textarea>
+        <button class="btn sm ghost" style="margin-top:6px;" onclick="saveReply('${r.uid}','${r.id}')">답변 저장</button>
+      </div>
+    </div>`).join('')
+    : `<p style="font-size:13px;color:var(--muted);padding:6px 2px;">받은 요청이 없습니다.</p>`;
+}
+
+async function saveReply(ownerUid, requestId){
+  const el = $('reply-'+ownerUid+'-'+requestId);
+  const reply = el.value.trim();
+  if(!reply){ toast('답변 내용을 입력해 주세요.'); return; }
+  try{
+    await db.ref('requests/'+ownerUid+'/'+requestId).update({ reply, repliedAt:Date.now(), status:'answered' });
+    toast('답변을 저장했습니다.');
+  }catch(e){ toast('저장에 실패했습니다.'); }
 }
