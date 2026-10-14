@@ -76,11 +76,29 @@ async function doSignup(){
 
   let cred;
   try{ cred = await auth.createUserWithEmailAndPassword(email, pw); }
-  catch(e){ setMsg(authErr(e)); $('btnSignup').disabled=false; authBusy=false; return; }
+  catch(e){
+    /* 예전 가입이 "로그인 계정만 만들어지고 기관 등록 전에 끊긴" 경우 같은 이메일로 다시 가입하면
+       '이미 가입된 이메일'이 뜬다 → 비밀번호가 맞으면 그 계정으로 로그인해서 이어서 등록한다 */
+    if(e.code === 'auth/email-already-in-use'){
+      try{ cred = await auth.signInWithEmailAndPassword(email, pw); }catch(e2){}
+      if(cred){
+        let registered = true;
+        try{ registered = (await db.ref('users/'+cred.user.uid).once('value')).exists(); }catch(e3){}
+        if(registered){ $('btnSignup').disabled=false; authBusy=false; routeUser(cred.user); return; }   // 정상 가입된 계정 → 그냥 로그인
+      }
+    }
+    if(!cred){ setMsg(authErr(e)); $('btnSignup').disabled=false; authBusy=false; return; }
+  }
 
   const ok = await registerMember(cred.user, name, code);
   $('btnSignup').disabled = false; authBusy = false;
-  if(ok) routeUser(cred.user);
+  if(ok){ routeUser(cred.user); return; }
+  // 계정은 남았는데 등록만 실패 → 안내 문구대로 "가입 마무리" 화면으로 보내 같은 이메일 재가입을 막는다
+  if(auth.currentUser){
+    const msg = $('authMsg').innerHTML;
+    switchAuth('resume'); $('authMsg').innerHTML = msg;
+    $('rsName').value = name; $('rsCode').value = code;
+  }
 }
 
 /* 가입이 중간에 끊긴 계정 마무리 */
