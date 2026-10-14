@@ -25,8 +25,11 @@ async function openCanvas(id){
   setTool('');            // 기본값: 아무 도구도 선택 안 됨
   draw();
   fitView();
-  if(!Object.keys(S.geno.nodes).length) hint('빈 캔버스를 탭하면 인물이 추가됩니다.');
-  maybeShowTutorial();
+  updateGrid();
+  $('asGrid').classList.toggle('on', snapOn);
+  /* 새 가계도(빈 캔버스)면 첫 인물을 자동으로 추가 — 사용 설명 팝업은 이때 생략 */
+  if(!Object.keys(S.geno.nodes).length) addPersonCenter();
+  else maybeShowTutorial();
 }
 function closeCanvas(){
   if(S.stage){ S.stage.destroy(); S.stage=null; S.layer=null; }
@@ -71,6 +74,7 @@ function buildStage(){
     lastDist=dist;
   });
   S.stage.on('touchend', ()=>{ lastDist=0; S.stage.draggable(S.tool==='pan'); });
+  S.stage.on('xChange yChange scaleXChange', updateGrid);
 
   S.stage.on('click tap', e=>{
     if(e.target !== S.stage) return;
@@ -90,10 +94,6 @@ function buildStage(){
   genoHistory = []; genoHistIndex = -1;
   pushHistory();
 
-  /* 빈 캔버스면 시작 방법 안내 */
-  if(Object.keys(S.geno.nodes||{}).length === 0){
-    hint("상단 '인물 추가' 버튼으로 첫 인물을 놓고, 인물을 우클릭해 가족을 늘리세요.");
-  }
 }
 function resizeStage(){
   if(!S.stage) return;
@@ -111,7 +111,7 @@ function setTool(t){
   if(t==='link') hint('연결할 인물 두 명을 차례로 탭하세요.');
   else if(t==='pan') hint('드래그해서 화면을 이동합니다.');
   else if(t==='eraser') hint('삭제할 인물이나 관계선을 탭하세요.');
-  else if(t==='select') hint('인물을 탭해 선택하세요. Shift+탭으로 다중 선택.');
+  else if(t==='select') hint('인물을 탭해 선택하세요. Shift+탭으로 다중 선택 후 오른쪽 아래 정렬 도구를 쓰세요.');
   else if(t==='household') hint('동거가족으로 묶을 인물들을 순서대로 탭하세요. 완료하려면 버튼을 다시 누르세요.');
   else if(t==='') hint('');
   else hintOff();
@@ -623,6 +623,7 @@ function drawNode(n){
 
   /* 드래그 — 이동 중 리드로 없음 (성능 최적화), 놓을 때만 전체 갱신 */
   g.on('dragmove', ()=>{
+    snapDrag(g, n);
     const dx = g.x() - n.x, dy = g.y() - n.y;
     n.x = Math.round(g.x()); n.y = Math.round(g.y());
 
@@ -707,6 +708,63 @@ function drawNode(n){
 
   S.layer.add(g);
   S.nodeGroups[n.id] = g;
+}
+
+/* ═══ 배치 보조도구 — 격자 맞춤 / 정렬 안내선 / 선택 인물 정렬 ═══ */
+const GRID = 28, SNAP_PX = 8;
+let snapOn = false;
+
+function updateGrid(){
+  const st = $('stage'), s = S.stage; if(!st || !s) return;
+  const g = GRID * s.scaleX();
+  st.classList.toggle('grid', snapOn);
+  st.style.backgroundSize = `${g}px ${g}px`;
+  st.style.backgroundPosition = `${s.x()-g/2}px ${s.y()-g/2}px`;
+}
+function toggleSnap(){
+  snapOn = !snapOn;
+  $('asGrid').classList.toggle('on', snapOn);
+  updateGrid();
+  toast(snapOn ? '격자 맞춤 켜짐 — 인물이 격자에 딱 붙습니다' : '격자 맞춤 꺼짐');
+}
+
+/* 드래그 중: 격자 맞춤(켜졌을 때) 또는 다른 인물과 가로/세로가 비슷하면 붙이고 안내선 표시 */
+function snapDrag(g, n){
+  let x = g.x(), y = g.y(), gx = null, gy = null;
+  if(snapOn){
+    x = Math.round(x/GRID)*GRID; y = Math.round(y/GRID)*GRID;
+  } else {
+    const d = SNAP_PX / S.stage.scaleX();
+    for(const m of Object.values(S.geno.nodes)){
+      if(m.id===n.id || S.selected.has(m.id)) continue;
+      if(gx===null && Math.abs(m.x-x)<d){ x = gx = m.x; }
+      if(gy===null && Math.abs(m.y-y)<d){ y = gy = m.y; }
+    }
+  }
+  g.position({x, y});
+  S.layer.find('.guide').forEach(l=>l.destroy());
+  const L = 4000;
+  if(gx!==null) S.layer.add(new Konva.Line({ name:'guide', points:[gx,y-L,gx,y+L], stroke:'#C15B47', strokeWidth:1, dash:[5,4], listening:false }));
+  if(gy!==null) S.layer.add(new Konva.Line({ name:'guide', points:[x-L,gy,x+L,gy], stroke:'#C15B47', strokeWidth:1, dash:[5,4], listening:false }));
+  S.layer.batchDraw();
+}
+
+/* 선택한 인물 정렬: row 가로 한 줄 / col 세로 한 줄 / spreadX·spreadY 같은 간격으로 펼치기 */
+function arrange(kind){
+  const ns = [...S.selected].map(id=>S.geno.nodes[id]).filter(Boolean);
+  if(ns.length < 2){ toast("'선택' 도구로 인물 2명 이상을 Shift+탭해 고르세요."); return; }
+  if(kind==='row' || kind==='col'){
+    const k = kind==='row' ? 'y' : 'x';
+    const v = Math.round(ns.reduce((s,n)=>s+n[k],0)/ns.length);
+    ns.forEach(n=>{ n[k] = v; });
+  } else {
+    const k = kind==='spreadX' ? 'x' : 'y';
+    ns.sort((a,b)=>a[k]-b[k]);
+    const first = ns[0][k], step = (ns[ns.length-1][k]-first)/(ns.length-1);
+    ns.forEach((n,i)=>{ n[k] = Math.round(first + step*i); });
+  }
+  ns.forEach(n=>saveNodePos(n));
+  pushHistory(); draw();
 }
 
 function zoomBy(f){
