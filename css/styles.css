@@ -97,7 +97,7 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
 }
 .tabbar button{
   display:flex;flex-direction:column;align-items:center;gap:3px;
-  font-size:10.5px;font-weight:600;color:var(--muted);padding:2px 14px;
+  font-size:10.5px;font-weight:600;color:var(--muted);padding:2px 4px;flex:1 1 0;min-width:0;white-space:nowrap;
 }
 .tabbar button.on{color:var(--sage-deep);}
 .tabbar button.on svg *{stroke:var(--sage-deep);}

@@ -4,6 +4,8 @@
    ============================================================ */
 
 function loadAdmin(){
+  // 관리자가 이미 있는데 needsAdmin이 true로 남은 기관(예전 가입 흐름 실패분)을 정리 — 남아 있으면 새 가입자가 관리자 자리를 선점할 수 있음
+  if(S.org.needsAdmin === true) db.ref('orgs/'+S.me.orgId+'/needsAdmin').set(false).catch(()=>{});
   db.ref('orgPrivate/'+S.me.orgId+'/joinCode').once('value')
     .then(s=>{ S.joinCode = s.val() || '——————'; $('adminCode').textContent = S.joinCode; })
     .catch(()=>{ $('adminCode').textContent = '——————'; });
@@ -41,9 +43,6 @@ function loadAdmin(){
           ${r.superAdmin?'슈퍼관리자 해제':'슈퍼관리자로'}</button>` : ''}
       </div>`).join('');
   }, err => toast('직원 목록을 불러오지 못했습니다.'));
-
-  $('superAdminPanel').classList.toggle('hide', !S.me.superAdmin);
-  if(S.me.superAdmin) loadOrgList();
 }
 
 /* 수정 #6: 거절 = 삭제가 아니라 rejected 마킹 (재가입 가능) */
@@ -153,26 +152,43 @@ async function addOrgAsSuperAdmin(){
   }catch(e){ toast('기관 등록 중 문제가 발생했습니다. 잠시 후 다시 시도해 주세요.'); }
 }
 
+/* orgMembers 루트 읽기가 보안 규칙에서 막혀 있으면 전체 목록이 통째로 실패하던 문제 수정:
+   코드·구성원 읽기는 실패해도 기관 목록은 그대로 보여준다 (null = 읽기 권한 없음) */
 function loadOrgList(){
   db.ref('orgs').once('value').then(async snap=>{
     const orgs = snap.val() || {};
-    const codesSnap = await db.ref('orgPrivate').once('value');
-    const codes = codesSnap.val() || {};
-    const membersSnap = await db.ref('orgMembers').once('value');
-    const allMembers = membersSnap.val() || {};
+    const [codes, allMembers] = await Promise.all([
+      db.ref('orgPrivate').once('value').then(s=>s.val()||{}).catch(()=>({})),
+      db.ref('orgMembers').once('value').then(s=>s.val()||{}).catch(()=>null)
+    ]);
+    if(!allMembers) toast('구성원 정보를 읽을 권한이 없습니다. 보안 규칙을 확인해 주세요.');
     const list = Object.entries(orgs).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
     $('orgList').innerHTML = list.length ? list.map(([id,o])=>{
-      const memberCount = Object.keys(allMembers[id]||{}).length;
+      const mem = allMembers ? Object.values(allMembers[id]||{}) : null;   // 거절된 기록 포함 (삭제 가능 여부 판단용)
+      const active = mem ? mem.filter(m=>!m.rejected) : [];
+      const admins = active.filter(m=>m.role==='admin' && m.approved);
+      const waiting = active.filter(m=>!m.approved).length;
+      const code = (codes[id]||{}).joinCode || '';
       return `
-      <div class="usr">
-        <div class="ub"><b>${esc(o.name)}</b><small>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('ko-KR') : '—'} · 직원 ${memberCount}명</small></div>
-        <span class="badge">${esc((codes[id]||{}).joinCode || '——————')}</span>
-        <button class="btn sm ghost" onclick="navigator.clipboard.writeText('${esc((codes[id]||{}).joinCode||'')}').then(()=>toast('코드를 복사했습니다.'))">복사</button>
-        ${memberCount===0 ? `<button class="btn sm ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="openDeleteOrgSheet('${id}','${esc(o.name)}')">삭제</button>` : ''}
+      <div class="usr" style="flex-wrap:wrap;">
+        <div class="ub"><b>${esc(o.name)}${id===S.me.orgId?' (내 기관)':''}</b><small>${o.createdAt ? new Date(o.createdAt).toLocaleDateString('ko-KR') : '—'} · ${mem ? `직원 ${active.length - waiting}명${waiting?` · 대기 ${waiting}명`:''}` : '직원 수 확인 불가'}</small></div>
+        <span class="badge">${esc(code || '——————')}</span>
+        <button class="btn sm ghost" onclick="navigator.clipboard.writeText('${esc(code)}').then(()=>toast('코드를 복사했습니다.'))">복사</button>
+        ${mem && mem.length===0 ? `<button class="btn sm ghost" style="color:var(--danger);border-color:#EBC8C0;" onclick="openDeleteOrgSheet('${id}','${esc(o.name)}')">삭제</button>` : ''}
+        ${mem && o.needsAdmin && !admins.length ? `<button class="btn sm ghost" onclick="resetAdminClaim('${id}')" title="첫 가입자가 관리자 자리만 잡고 가입을 끝내지 못한 경우">관리자 자리 초기화</button>` : ''}
+        ${mem ? `<small style="flex:1 1 100%;font-size:12px;color:var(--ink-soft);margin-top:4px;">관리자: ${
+          admins.length ? admins.map(a=>`${esc(a.name)} (${esc(a.email)})`).join(', ') : (o.needsAdmin ? '아직 가입 전 — 코드로 첫 가입 시 자동 지정' : '없음')}</small>` : ''}
       </div>`;
     }).join('')
       : `<p style="font-size:13px;color:var(--muted);padding:6px 2px;">등록된 기관이 없습니다.</p>`;
   }).catch(()=> toast('기관 목록을 불러오지 못했습니다.'));
+}
+
+/* 첫 가입자가 관리자 자리(orgAdminClaim)만 선점하고 가입을 끝내지 못했을 때 — 비워서 다음 가입자가 관리자가 되게 함 */
+async function resetAdminClaim(orgId){
+  if(!confirm('이 기관의 관리자 자리를 비울까요? 다음에 가입코드로 가입하는 사람이 관리자가 됩니다.')) return;
+  try{ await db.ref('orgAdminClaim/'+orgId).remove(); toast('관리자 자리를 비웠습니다.'); }
+  catch(e){ toast('처리에 실패했습니다.'); }
 }
 
 /* 소속 직원이 0명인 기관만 삭제 가능 — 기관명을 정확히 입력해야 버튼이 활성화됨 */
@@ -197,7 +213,7 @@ async function deleteOrg(orgId){
     }
     const codeSnap = await db.ref('orgPrivate/'+orgId+'/joinCode').once('value');
     const code = codeSnap.val();
-    const writes = { ['orgs/'+orgId]: null, ['orgPrivate/'+orgId]: null };
+    const writes = { ['orgs/'+orgId]: null, ['orgPrivate/'+orgId]: null, ['orgAdminClaim/'+orgId]: null };
     if(code) writes['orgCodes/'+code] = null;
     await db.ref().update(writes);
   }catch(e){ toast('기관 삭제에 실패했습니다.'); return; }

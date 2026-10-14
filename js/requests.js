@@ -7,11 +7,15 @@ let requestsRef = null, allRequestsRef = null;
 
 function loadRequests(){
   if(requestsRef) requestsRef.off();
-  requestsRef = db.ref('requests/'+S.uid);
-  requestsRef.on('value', snap=> renderMyRequests(snap.val()),
-    err => toast('요청 목록을 불러오지 못했습니다.'));
+  if(!S.me.superAdmin){
+    requestsRef = db.ref('requests/'+S.uid);
+    requestsRef.on('value', snap=> renderMyRequests(snap.val()),
+      err => toast('요청 목록을 불러오지 못했습니다.'));
+  }
 
+  // 슈퍼관리자는 요청을 받는 쪽 — 보내기/내 요청 영역은 숨김
   $('superAdminRequestPanel').classList.toggle('hide', !S.me.superAdmin);
+  $('myRequestPanel').classList.toggle('hide', !!S.me.superAdmin);
   if(S.me.superAdmin){
     if(allRequestsRef) allRequestsRef.off();
     allRequestsRef = db.ref('requests');

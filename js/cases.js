@@ -21,15 +21,24 @@ function enterApp(){
   $('meEmail').textContent= S.me.email;
   $('meOrg').textContent  = S.org.name;
 
-  const isAdmin = S.me.role==='admin';
-  $('meRole').textContent = isAdmin ? '관리자' : '직원';
+  /* 역할별 탭: 직원 = 케이스·요청·내정보 / 기관관리자 = +기관 관리 / 슈퍼관리자 = +전체 기관, 요청은 '받은 요청' */
+  const isAdmin = S.me.role==='admin', isSuper = !!S.me.superAdmin;
+  $('meRole').textContent = isSuper ? '슈퍼관리자' : isAdmin ? '관리자' : '직원';
   $('sideAdmin').classList.toggle('hide', !isAdmin);
   $('tabBtnAdmin').classList.toggle('hide', !isAdmin);
+  $('sideOrgs').classList.toggle('hide', !isSuper);
+  $('tabBtnOrgs').classList.toggle('hide', !isSuper);
+  const reqLabel = isSuper ? '받은 요청' : '관리자에게 요청';
+  $('sideRequestsLbl').textContent = reqLabel;
+  $('tabBtnRequestsLbl').textContent = isSuper ? '받은 요청' : '요청';
+  $('reqTitleHdr').textContent = reqLabel;
   if(isAdmin) loadAdmin();
+  if(isSuper) loadOrgList();
   loadRequests();
 
   show('app');
-  goTab(S.tab==='admin' && !isAdmin ? 'cases' : S.tab);
+  const allowed = ['cases','requests','me', ...(isAdmin?['admin']:[]), ...(isSuper?['orgs']:[])];
+  goTab(allowed.includes(S.tab) ? S.tab : 'cases');
   watchCases();
   updateNewBtn();
 }
@@ -98,7 +107,7 @@ function renderCases(){
 
 function quickDeleteCase(id, title){
   if(!confirm(`"${title}" 케이스를 삭제할까요?\n가계도 기록도 함께 사라지며 복구할 수 없습니다.`)) return;
-  db.ref(casePath(id)).update({ deleted:true, updatedAt:Date.now() })
+  purgeCase(id)
     .then(()=> toast('삭제했습니다.'))
     .catch(()=> toast('삭제에 실패했습니다.'));
 }
@@ -147,9 +156,9 @@ function miniGeno(c){
 
 function goTab(t){
   S.tab = t;
-  ['tabCases','tabAdmin','tabMe','tabRequests'].forEach(v=>$(v).classList.add('hide'));
+  ['tabCases','tabAdmin','tabOrgs','tabMe','tabRequests'].forEach(v=>$(v).classList.add('hide'));
   $('tab'+t[0].toUpperCase()+t.slice(1)).classList.remove('hide');
-  [['cases','tabBtnCases','sideCases'],['admin','tabBtnAdmin','sideAdmin'],['me','tabBtnMe','sideMe'],['requests','tabBtnRequests','sideRequests']]
+  [['cases','tabBtnCases','sideCases'],['admin','tabBtnAdmin','sideAdmin'],['orgs','tabBtnOrgs','sideOrgs'],['me','tabBtnMe','sideMe'],['requests','tabBtnRequests','sideRequests']]
     .forEach(([k,b,s])=>{ $(b).classList.toggle('on', k===t); $(s).classList.toggle('on', k===t); });
   updateNewBtn();
   $('mainScroll').scrollTop = 0;
@@ -158,6 +167,10 @@ function goTab(t){
 /* ═══ 케이스 생성·설정 (경로: cases/{orgId}/{caseId}) ═══ */
 function casePath(id){ return 'cases/'+S.me.orgId+'/'+id; }
 function genoPath(){ return 'genograms/'+S.me.orgId+'/'+S.caseId; }
+/* 케이스 메타 + 가계도 본체를 한 번에 실제 삭제 (예전 deleted:true 표시 방식은 데이터가 남았음) */
+function purgeCase(id){
+  return db.ref().update({ [casePath(id)]: null, ['genograms/'+S.me.orgId+'/'+id]: null });
+}
 
 function newCase(){
   openSheet(`
@@ -247,7 +260,8 @@ async function saveCaseSettings(){
 }
 async function deleteCase(){
   if(!confirm('이 케이스를 삭제할까요? 가계도 기록도 함께 사라집니다.')) return;
-  try{ await db.ref(casePath(S.caseId)).update({ deleted:true, updatedAt:Date.now() }); }
+  clearTimeout(metaT);   // 대기 중인 썸네일 저장이 삭제 뒤에 실행되지 않게
+  try{ await purgeCase(S.caseId); }
   catch(e){ toast('삭제에 실패했습니다.'); return; }
   closeSheet(); closeCanvas(); toast('삭제했습니다.');
 }
