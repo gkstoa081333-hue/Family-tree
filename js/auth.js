@@ -32,11 +32,21 @@ async function registerMember(user, name, code){
     try{ await user.delete(); }catch(e){ await auth.signOut(); }   // 유령 계정 방지 (수정 #6 계열)
     return false;
   }
+  /* 첫 관리자 자리는 orgAdminClaim/{orgId}에 내 uid를 먼저 써서 "선점"한다.
+     보안 규칙이 '비어 있을 때만' 쓰기를 허용하므로 동시에 가입해도 한 명만 성공한다.
+     (가입 마무리로 재시도하는 경우엔 이미 내 uid가 들어 있으므로 그대로 관리자)
+     네트워크 오류로 선점 여부를 확인할 수 없으면 직원으로 등록하지 않고 중단한다
+     — 직원으로 잘못 들어가면 그 기관은 관리자가 없는 채로 남기 때문. */
+  const failMsg = '가입 처리 중 문제가 발생했습니다. 아래 "가입 마무리"로 다시 시도해 주세요.';
+  const claimRef = db.ref('orgAdminClaim/'+orgId);
   let isFirstMember = false;
   try{
     const needsAdminSnap = await db.ref('orgs/'+orgId+'/needsAdmin').once('value');
-    isFirstMember = needsAdminSnap.val() === true;
-  }catch(e){}
+    if(needsAdminSnap.val() === true){
+      try{ await claimRef.set(user.uid); isFirstMember = true; }
+      catch(e){ isFirstMember = (await claimRef.once('value')).val() === user.uid; }
+    }
+  }catch(e){ setMsg(failMsg); return false; }
   const role = isFirstMember ? 'admin' : 'member';
   const approved = isFirstMember;
   const rec = { name, email:user.email, orgId, role, approved, createdAt:Date.now() };
@@ -45,7 +55,10 @@ async function registerMember(user, name, code){
       ['users/'+user.uid]: rec,
       ['orgMembers/'+orgId+'/'+user.uid]: { name, email:user.email, role, approved, createdAt:rec.createdAt }
     });
-  }catch(e){ setMsg('가입 처리 중 문제가 발생했습니다. 아래 "가입 마무리"로 다시 시도해 주세요.'); return false; }
+  }catch(e){
+    if(isFirstMember) claimRef.remove().catch(()=>{});   // 등록 실패 시 관리자 자리 반납
+    setMsg(failMsg); return false;
+  }
   /* needsAdmin 해제는 등록이 끝난 뒤 별도 쓰기로 분리한다 — 같은 update()에 묶으면
      보안 규칙이 "해제된 이후" 값을 기준으로 이 등록 자체를 심사하게 되어 거부된다.
      (등록 자체는 이미 끝났으므로 이 쓰기가 실패해도 가입은 그대로 성공 처리) */

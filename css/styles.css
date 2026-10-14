@@ -97,7 +97,7 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
 }
 .tabbar button{
   display:flex;flex-direction:column;align-items:center;gap:3px;
-  font-size:10.5px;font-weight:600;color:var(--muted);padding:2px 14px;
+  font-size:10.5px;font-weight:600;color:var(--muted);padding:2px 4px;flex:1 1 0;min-width:0;white-space:nowrap;
 }
 .tabbar button.on{color:var(--sage-deep);}
 .tabbar button.on svg *{stroke:var(--sage-deep);}
@@ -224,6 +224,20 @@ textarea.inp{height:auto;min-height:84px;padding:12px 14px;resize:vertical;line-
 .tool.on{color:var(--sage-deep);}
 .tool.on .sym{background:var(--sage-bg);}
 .tool.on .sym svg *{stroke:var(--sage-deep);}
+
+/* ── 배치 보조도구 ── */
+#stage.grid{background-image:radial-gradient(circle,#b9c9c2 1.2px,transparent 1.6px);}
+.assist{
+  position:absolute;right:12px;bottom:12px;background:rgba(255,255,255,.94);border:1px solid var(--line);
+  border-radius:14px;display:flex;flex-direction:column;overflow:hidden;z-index:5;
+}
+.assist button{padding:7px 11px;font-size:11px;font-weight:600;color:var(--ink-soft);text-align:left;white-space:nowrap;}
+.assist button+button{border-top:1px solid var(--line);}
+.assist button.on{background:var(--sage-bg);color:var(--sage-deep);}
+/* 인물 추가 — 다른 도구보다 눈에 띄게 */
+.tool.primary{color:var(--sage-deep);font-weight:800;font-size:11px;}
+.tool.primary .sym{width:42px;height:42px;border-radius:14px;background:var(--sage-deep);box-shadow:0 4px 12px -4px rgba(76,122,109,.7);}
+.tool.primary .sym svg *{stroke:#fff;}
 
 /* ── 시트 ── */
 .dim{
