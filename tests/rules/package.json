@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "firebase emulators:exec --only auth,database --project demo-genogram \"node test.js\""
+  },
+  "devDependencies": { "firebase": "10.12.2", "firebase-tools": "13.29.1" }
+}
