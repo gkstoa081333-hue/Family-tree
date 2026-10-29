@@ -262,7 +262,7 @@ const TG_EXAMPLE = '대상자(여, 46)는 2년 전 남편(48)과 이혼하고 �
 
 function openTextGeno(){
   openSheet(`
-    <h3>글로 그리기</h3>
+    <h3>글·말로 그리기</h3>
     <div class="sub">상담기록의 가족관계 문장을 붙여 넣으면 표준 기호로 가계도를 그려요.<br>
       글은 이 브라우저 안에서만 해석하고 저장하지 않아요. 그려진 인물·관계만 저장돼요.</div>
     <div class="fld"><label>가족관계 <button type="button" class="btn ghost" style="height:auto;padding:2px 10px;font-size:12px;margin-left:6px;" onclick="$('tgText').value=TG_EXAMPLE;tgPreview()">예시 넣기</button>${TG_SR ? `<button type="button" id="tgMicBtn" class="btn ghost" style="height:auto;padding:2px 10px;font-size:12px;margin-left:4px;" onclick="tgMic()">🎤 말로 입력</button>` : ''}</label>
