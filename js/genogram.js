@@ -258,6 +258,7 @@ function saveInfoCard(){
   n.family_history=$('icFamily').value.trim();
   if($('icCause')) n.cause_of_death=$('icCause').value.trim();
   n.memo=$('icMemo').value.trim();
+  delete n.unknown;   // 정보를 저장하면 '미확인' 점선 해제
   const st={}; $('infoCard').querySelectorAll('.ic-stag.on').forEach(b=> st[b.dataset.k]=true); n.status=st;
   n.updatedAt=Date.now();
   const upd={['nodes/'+id]:n};

@@ -453,8 +453,8 @@ function drawLink(l, a, b){
   /* 연도 라벨 */
   function addYearLabel(x, y){
     const yr = l.year || l.yearStart;
-    if(!yr) return;
-    const txt = l.yearEnd ? `${yr}–${l.yearEnd}` : yr;
+    if(!yr && !l.yearEnd) return;
+    const txt = !yr ? `~${l.yearEnd}` : l.yearEnd ? `${yr}–${l.yearEnd}` : yr;
     S.layer.add(new Konva.Text({
       x:x-30, y:y-16, width:60, align:'center',
       text:String(txt), fontSize:10, fontFamily:'Pretendard',
@@ -568,9 +568,10 @@ function drawNode(n){
     shape = new Konva.Rect({ x:-R, y:-R, width:NW, height:NW, fill:'#fff', stroke:col, strokeWidth:sw });
     if(n.ip) g.add(new Konva.Rect({ x:-R-5, y:-R-5, width:NW+10, height:NW+10, stroke:col, strokeWidth:1.2, listening:false }));
   }
+  if(n.unknown) shape.dash([6,4]);   // 글로 그리기에서 자동으로 채운 미확인 인물
   g.add(shape);
 
-  const on = Object.keys(n.status||{}).filter(k=>n.status[k]);
+  const on =Object.keys(n.status||{}).filter(k=>n.status[k]);
   if(on.length){
     on.forEach((k,i)=>{
       const h = R / Math.max(on.length,1);

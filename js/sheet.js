@@ -10,6 +10,7 @@ function openSheet(html){
 }
 function closeSheet(){
   $('dim').classList.remove('on'); $('sheet').classList.remove('on');
+  window.tgRec?.stop();   // 글로 그리기에서 듣는 중이면 마이크 끔
 }
 
 function openPerson(id){
@@ -109,6 +110,7 @@ function savePerson(id){
   n.birth = $('pBirth').value.trim();
   n.alive = segVal('pAlive')==='1';
   n.ip    = segVal('pIp')==='1';
+  delete n.unknown;   // 정보를 저장하면 '미확인' 점선 해제
   n.memo  = $('pMemo').value.trim();
   
   // 필수 #3: 새 필드 저장
