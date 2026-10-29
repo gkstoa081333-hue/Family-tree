@@ -21,6 +21,7 @@ genogram/
 │  ├─ canvas.js        # [기능] 캔버스·노드/링크 렌더링
 │  ├─ sheet.js         # [기능] 인물·관계선 편집 시트
 │  ├─ genogram.js      # [기능] 우클릭 메뉴·가족 추가·Undo/Redo·PNG
+│  ├─ textgeno.js      # [기능] 글로 그리기 — 가족관계 문장 → 가계도 (규칙 기반, 외부 전송 없음)
 │  ├─ admin.js         # [기능] 관리자(승인·역할·공개설정·초대코드)
 │  └─ main.js          # 부팅·전역 이벤트·캔버스 단축키
 └─ README.md
@@ -31,7 +32,7 @@ genogram/
 모든 함수가 전역 스코프에 정의되므로 **로드 순서가 곧 의존성 순서**다. `index.html`에서 아래 순서를 반드시 유지한다.
 
 ```
-config → utils → auth → cases → canvas → sheet → genogram → admin → main
+config → utils → auth → cases → canvas → sheet → genogram → textgeno → admin → main
 ```
 
 파일을 추가하거나 순서를 바꿀 때는, 앞 파일에서 정의한 함수/변수를 뒤 파일이 참조한다는 점에 유의.
